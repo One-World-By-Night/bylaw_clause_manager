@@ -53,6 +53,20 @@ function bcm_register_acf_fields() {
                     'type' => 'number',
                 ],
                 [
+                    'key' => 'field_vote_date',
+                    'label' => 'Vote Date',
+                    'name' => 'vote_date',
+                    'type' => 'date_picker',
+                    'display_format' => 'F j, Y',
+                    'return_format' => 'F j, Y',
+                ],
+                [
+                    'key' => 'field_vote_reference',
+                    'label' => 'Vote Reference',
+                    'name' => 'vote_reference',
+                    'type' => 'text',
+                ],
+                [
                     'key' => 'field_parent_clause',
                     'label' => 'Parent Clause',
                     'name' => 'parent_clause',
@@ -96,11 +110,13 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0) {
     if (!$clauses) return;
 
     foreach ($clauses as $clause) {
-        $section = get_field('section_id', $clause->ID);
-        $label   = get_field('label', $clause->ID);
-        $content = get_field('content', $clause->ID);
-        $tags    = get_field('tags', $clause->ID);
-        $parent  = get_field('parent_clause', $clause->ID);
+        $section      = get_field('section_id', $clause->ID);
+        $label        = get_field('label', $clause->ID);
+        $content      = get_field('content', $clause->ID);
+        $tags         = get_field('tags', $clause->ID);
+        $parent       = get_field('parent_clause', $clause->ID);
+        $vote_date    = get_field('vote_date', $clause->ID);
+        $vote_ref     = get_field('vote_reference', $clause->ID);
 
         $class_string = '';
         $tag_array = [];
@@ -110,10 +126,20 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0) {
             $class_string = implode(' ', array_map('sanitize_html_class', $tag_array));
         }
 
-        // Output clause block with data attributes
+        // Build tooltip text
+        $tooltip = '';
+        if ($vote_date || $vote_ref) {
+            $tooltip_parts = [];
+            if ($vote_date) $tooltip_parts[] = 'Vote Date: ' . esc_html($vote_date);
+            if ($vote_ref)  $tooltip_parts[] = 'Reference: ' . esc_html($vote_ref);
+            $tooltip = implode(' | ', $tooltip_parts);
+        }
+
+        // Output clause block with data attributes and optional tooltip
         echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" ' .
              'data-id="' . esc_attr($clause->ID) . '" ' .
              'data-parent="' . esc_attr($parent ? $parent : 0) . '" ' .
+             (!empty($tooltip) ? 'title="' . esc_attr($tooltip) . '" ' : '') .
              'style="margin-left:' . (20 * $depth) . 'px;">';
 
         echo '<strong>' . esc_html($section . '. ' . $label) . '</strong>';
@@ -128,6 +154,7 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0) {
         bcm_render_bylaw_tree($clause->ID, $depth + 1);
     }
 }
+
 
 // Shortcode for rendering
 add_shortcode('render_bylaws', function($atts) {

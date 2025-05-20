@@ -16,12 +16,15 @@ Each bylaw clause is a WordPress post with fields:
 - **Parent Clause** (to establish hierarchy)
 - **Sort Order**
 - **Tags** (e.g., `anarch`, `caitiff`, `always`)
+- **Vote Date** (e.g., *March 10, 2024*)
+- **Vote Reference** (e.g., *1234567*)
 
 ### 2. **Recursive Rendering**
 A shortcode `[render_bylaws]` renders all clauses recursively:
 - Automatically nests based on parent-child relationships.
 - Indents for visual structure.
-- Outputs metadata (`data-id`, `data-parent`) for JS filtering.
+- Outputs metadata (`data-id`, `data-parent`) for JavaScript filtering.
+- Adds a tooltip (`title`) with vote date and reference on hover if present.
 
 ### 3. **Tag-Based Filtering**
 A JavaScript-enhanced multi-select dropdown:
