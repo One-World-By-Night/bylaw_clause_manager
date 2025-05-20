@@ -1,0 +1,14 @@
+.bylaw-clause {
+  margin-bottom: 1em;
+}
+
+.bylaw-clause strong {
+  display: block;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.bylaw-content {
+  margin-left: 1em;
+  font-size: 0.95em;
+}
