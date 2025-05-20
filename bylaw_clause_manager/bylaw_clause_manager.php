@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bylaw Clause Manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
- * Version: 1.0.6
+ * Version: 1.0.8
  * Author: OWBN
  */
 
@@ -57,13 +57,11 @@ function bcm_register_acf_fields() {
 }
 add_action('acf/init', 'bcm_register_acf_fields');
 
-// Improve ACF dropdown display for Parent Clause field
 add_filter('acf/fields/post_object/result/name=parent_clause', function($title, $post, $field, $post_id) {
     $section_id = get_field('section_id', $post->ID);
     return $title . ' [' . $section_id . ']';
 }, 10, 4);
 
-// Add custom columns to admin list view
 add_filter('manage_bylaw_clause_posts_columns', function($columns) {
     $new = [];
     foreach ($columns as $key => $label) {
@@ -82,11 +80,7 @@ add_action('manage_bylaw_clause_posts_custom_column', function($column, $post_id
         echo esc_html(ucfirst($val) ?: '—');
     } elseif ($column === 'parent_clause') {
         $parent_id = get_field('parent_clause', $post_id);
-        if ($parent_id) {
-            echo esc_html(get_the_title($parent_id));
-        } else {
-            echo '—';
-        }
+        echo $parent_id ? esc_html(get_the_title($parent_id)) : '—';
     }
 }, 10, 2);
 
@@ -98,19 +92,15 @@ add_filter('manage_edit-bylaw_clause_sortable_columns', function($columns) {
 
 add_action('pre_get_posts', function($query) {
     if (!is_admin() || !$query->is_main_query()) return;
-
     $orderby = $query->get('orderby');
-
     if ($orderby === 'bylaw_group') {
         $query->set('meta_key', 'bylaw_group');
         $query->set('orderby', 'meta_value');
     }
-
     if ($orderby === 'parent_clause') {
         $query->set('meta_key', 'parent_clause');
         $query->set('orderby', 'meta_value');
     }
-
     if ($query->get('post_type') === 'bylaw_clause' && isset($_GET['bylaw_group']) && $_GET['bylaw_group'] !== '') {
         $query->set('meta_query', [[
             'key' => 'bylaw_group',
@@ -123,31 +113,17 @@ add_action('pre_get_posts', function($query) {
 add_action('restrict_manage_posts', function() {
     global $typenow;
     if ($typenow !== 'bylaw_clause') return;
-
     $selected = $_GET['bylaw_group'] ?? '';
-    $options = [
-        '' => 'All Bylaw Groups',
-        'character' => 'Character',
-        'council' => 'Council',
-        'coordinator' => 'Coordinator',
-    ];
-
+    $options = [ '' => 'All Bylaw Groups', 'character' => 'Character', 'council' => 'Council', 'coordinator' => 'Coordinator' ];
     echo '<select name="bylaw_group">';
     foreach ($options as $val => $label) {
-        printf(
-            '<option value="%s"%s>%s</option>',
-            esc_attr($val),
-            selected($selected, $val, false),
-            esc_html($label)
-        );
+        printf('<option value="%s"%s>%s</option>', esc_attr($val), selected($selected, $val, false), esc_html($label));
     }
     echo '</select>';
 });
 
-// Recursive Rendering Function with Anchors and Group Filtering
 function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
     $meta_query = [];
-
     if ($parent_id === 0) {
         $meta_query[] = [
             'relation' => 'OR',
@@ -156,21 +132,11 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
             [ 'key' => 'parent_clause', 'value' => '0', 'compare' => '=' ]
         ];
     } else {
-        $meta_query[] = [
-            'key' => 'parent_clause',
-            'value' => $parent_id,
-            'compare' => '='
-        ];
+        $meta_query[] = [ 'key' => 'parent_clause', 'value' => $parent_id, 'compare' => '=' ];
     }
-
     if ($depth === 0 && $group) {
-        $meta_query[] = [
-            'key' => 'bylaw_group',
-            'value' => $group,
-            'compare' => '='
-        ];
+        $meta_query[] = [ 'key' => 'bylaw_group', 'value' => $group, 'compare' => '=' ];
     }
-
     $clauses = get_posts([
         'post_type' => 'bylaw_clause',
         'meta_query' => $meta_query,
@@ -179,9 +145,7 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
         'order' => 'ASC',
         'numberposts' => -1
     ]);
-
     if (!$clauses) return;
-
     foreach ($clauses as $clause) {
         $section = get_field('section_id', $clause->ID);
         $label = get_field('label', $clause->ID);
@@ -191,9 +155,7 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
         $vote_date = get_field('vote_date', $clause->ID);
         $vote_ref = get_field('vote_reference', $clause->ID);
 
-        if ((int) $clause->ID === (int) $parent) {
-            continue;
-        }
+        if ((int) $clause->ID === (int) $parent) continue;
 
         $class_string = '';
         $tag_array = [];
@@ -202,69 +164,88 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
             $class_string = implode(' ', array_map('sanitize_html_class', $tag_array));
         }
 
-        $tooltip = '';
+        $vote_marker = '';
         if ($vote_date || $vote_ref) {
             $tooltip_parts = [];
             if ($vote_date) $tooltip_parts[] = 'Vote Date: ' . esc_html($vote_date);
             if ($vote_ref) $tooltip_parts[] = 'Reference: ' . esc_html($vote_ref);
-            $tooltip = implode(' | ', $tooltip_parts);
+            $tooltip_text = implode(' | ', $tooltip_parts);
+            $vote_marker = '<span class="vote-tooltip" data-tooltip="' . esc_attr($tooltip_text) . '"><sup>📜</sup></span>';
         }
 
         $anchor_id = sanitize_title($section);
-        echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" ' .
-             'id="clause-' . esc_attr($anchor_id) . '" ' .
-             'data-id="' . esc_attr($clause->ID) . '" ' .
-             'data-parent="' . esc_attr($parent ? $parent : 0) . '" ' .
-             (!empty($tooltip) ? 'title="' . esc_attr($tooltip) . '" ' : '') .
-             'style="margin-left:' . (20 * $depth) . 'px;">';
-
-        echo '<span class="bylaw-label">' . esc_html($section . '. ' . $label) . '</span>';
-
+        echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ? $parent : 0) . '" style="margin-left:' . (20 * $depth) . 'px;">';
+        echo '<span class="bylaw-label">' . esc_html($section . '. ' . $label) . $vote_marker . '</span>';
         if (!empty(trim(strip_tags($content)))) {
             echo '<div class="bylaw-content">' . $content . '</div>';
         }
-
         echo '</div>';
-
         bcm_render_bylaw_tree($clause->ID, $depth + 1, $group);
     }
 }
 
-// Shortcode for rendering
 add_shortcode('render_bylaws', function($atts) {
-    $atts = shortcode_atts([
-        'group' => null
-    ], $atts);
-
+    $atts = shortcode_atts([ 'group' => null ], $atts);
     echo '<div id="bcm-toolbar">
             <label for="bcm-tag-select">Filter by Tag:</label>
             <select id="bcm-tag-select" multiple style="width: 300px;"></select>
             <button onclick="window.print()">Print / Export PDF</button>
           </div>';
-
     ob_start();
     bcm_render_bylaw_tree(0, 0, $atts['group']);
     return ob_get_clean();
 });
 
-// Enqueue CSS and JS assets
 function bcm_enqueue_assets() {
-    $plugin_url = plugin_dir_url(__FILE__);
-
-    wp_enqueue_style('bcm-style', $plugin_url . 'css/style.css');
+    $plugin_url = plugins_url('', __FILE__);
     wp_enqueue_style('select2-style', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css');
     wp_enqueue_script('select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', ['jquery'], null, true);
-    wp_enqueue_script('bcm-filter', $plugin_url . 'js/filter.js', ['jquery', 'select2'], false, true);
+    wp_enqueue_script('bcm-filter', $plugin_url . '/js/filter.js', ['jquery', 'select2'], false, true);
 }
-add_action('wp_enqueue_scripts', 'bcm_enqueue_assets');
 
-// Tell ACF to save JSON definitions in the plugin folder
-add_filter('acf/settings/save_json', function ($path) {
-    return plugin_dir_path(__FILE__) . 'acf-json';
-});
+function bcm_output_inline_assets() {
+    ?>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <style>
+        .vote-tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            font-size: 0.85em;
+            color: #555;
+            margin-left: 4px;
+        }
+        .vote-tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-size: 0.75em;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease-in-out;
+            z-index: 9999;
+            min-width: 160px;
+            max-width: 280px;
+            text-align: left;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        .vote-tooltip:hover::after {
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <?php
+}
+add_action('wp_head', 'bcm_output_inline_assets', 100);
 
-// Tell ACF to load JSON definitions from the plugin folder
-add_filter('acf/settings/load_json', function ($paths) {
-    $paths[] = plugin_dir_path(__FILE__) . 'acf-json';
-    return $paths;
-});
+add_filter('acf/settings/save_json', fn($path) => plugin_dir_path(__FILE__) . 'acf-json');
+add_filter('acf/settings/load_json', fn($paths) => array_merge($paths, [plugin_dir_path(__FILE__) . 'acf-json']));
+add_action('wp_enqueue_scripts', 'bcm_enqueue_assets', 100);
