@@ -17,23 +17,39 @@ Each bylaw clause is a WordPress post with fields:
 - **Sort Order**
 - **Tags** (e.g., `anarch`, `caitiff`, `always`)
 - **Vote Date** (e.g., *March 10, 2024*)
-- **Vote Reference** (e.g., *1234567*)
+- **Vote Reference** (e.g., *VC-22-003*)
+- **Bylaw Group** (e.g., `character`, `coordinator`, `council`) for filtering different rulebooks
 
 ### 2. **Recursive Rendering**
-A shortcode `[render_bylaws]` renders all clauses recursively:
+A shortcode `[render_bylaws group="character"]` renders clauses by group:
 - Automatically nests based on parent-child relationships.
 - Indents for visual structure.
 - Outputs metadata (`data-id`, `data-parent`) for JavaScript filtering.
-- Adds a tooltip (`title`) with vote date and reference on hover if present.
+- Adds a tooltip (`title` attribute) if vote metadata is present.
+- Generates anchored links using section IDs (e.g., `#clause-2-g-i-3`).
 
-### 3. **Tag-Based Filtering**
-A JavaScript-enhanced multi-select dropdown:
-- Auto-generates from tags used on the page.
-- Allows users to filter by tags like `anarch`, `caitiff`.
+### 3. **Vote Metadata Display (Hover Tooltip)**
+- If either **vote date** or **vote reference** exists for a clause, the plugin adds a tooltip to the clause block.
+- Tooltip text includes:
+  - `Vote Date: <date>` (if set)
+  - `Reference: <reference>` (if set)
+- If **both fields are empty**, no tooltip is shown — avoiding unnecessary clutter or blank hovers.
+- Example tooltip:  
+  _Vote Date: March 10, 2024 | Reference: VC-22-003_
+
+### 4. **Tag-Based Filtering with Select2**
+A Select2-powered multi-select dropdown dynamically loads all tags used across clauses:
+- Allows users to filter by terms like `anarch`, `caitiff`, etc.
+- Includes a **“Clear Filters” button** to reset the dropdown and reveal all clauses.
 - Ensures that:
   - **Matched clauses** are shown.
-  - **All ancestor clauses** are also shown for context.
-  - **Clauses tagged `always`** are **always visible**.
+  - **All ancestor clauses** are also shown for readability.
+  - **Clauses tagged `always`** are **always visible**, even when filters are active.
+
+### 5. **Print / Export Support**
+- A **“Print / Export PDF” button** is included above the clause tree.
+- When clicked, it prints only the currently visible clauses (honoring active filters).
+- Useful for exporting filtered views of specific sections like “Caitiff-only” rules or a Coordinator-specific handbook.
 
 ---
 
@@ -62,3 +78,4 @@ From [https://www.owbn.net/bylaws/character](https://www.owbn.net/bylaws/charact
   - `2` → `2.g` → `2.g.i` → `2.g.i.3`
 - Even though only the final item is tagged `caitiff`, its ancestors are shown.
 - Any item tagged `always` (like `2`) is shown regardless of filter.
+- Clicking “Clear Filters” returns all clauses to view.

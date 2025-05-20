@@ -2,20 +2,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const clauses = document.querySelectorAll('.bylaw-clause');
   const tagSet = new Set();
 
-  // Extract all tags
+  // Extract all tags from class names
   clauses.forEach(clause => {
     clause.classList.forEach(cls => {
       if (cls !== 'bylaw-clause') tagSet.add(cls);
     });
   });
 
-  // Build select
-  const select = document.createElement('select');
-  select.multiple = true;
-  select.id = 'bcm-tag-filter';
-  select.style.margin = '1em 0';
-  select.style.display = 'block';
-
+  // Populate Select2 dropdown
+  const select = document.getElementById('bcm-tag-select');
   tagSet.forEach(tag => {
     const option = document.createElement('option');
     option.value = tag;
@@ -23,16 +18,24 @@ document.addEventListener('DOMContentLoaded', () => {
     select.appendChild(option);
   });
 
-  const container = document.querySelector('.bylaw-clause')?.parentElement;
-  if (container) container.prepend(select);
+  // Add Clear button
+  const clearBtn = document.createElement('button');
+  clearBtn.textContent = 'Clear Filters';
+  clearBtn.type = 'button';
+  clearBtn.style.marginLeft = '10px';
+  select.parentElement.appendChild(clearBtn);
 
-  // Main filtering logic
-  select.addEventListener('change', () => {
-    const selectedTags = Array.from(select.selectedOptions).map(opt => opt.value);
-    const clausesById = {};
+  // Initialize Select2
+  jQuery(select).select2({
+    placeholder: 'Filter by tag',
+    width: 'resolve'
+  });
+
+  // Core filter function
+  function applyFilter(selected) {
     const showIds = new Set();
+    const clausesById = {};
 
-    // Index all clauses by ID
     clauses.forEach(clause => {
       const id = clause.dataset.id;
       clausesById[id] = clause;
@@ -41,12 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const tags = classes.filter(cls => cls !== 'bylaw-clause');
 
       const hasAlways = tags.includes('always');
-      const matchesFilter = selectedTags.some(tag => tags.includes(tag));
+      const matchesFilter = selected.some(tag => tags.includes(tag));
 
-      if (hasAlways || matchesFilter) {
+      if (hasAlways || matchesFilter || selected.length === 0) {
         showIds.add(id);
-
-        // Walk up parents and include them
         let current = clause;
         while (current && current.dataset.parent && current.dataset.parent !== '0') {
           const parentId = current.dataset.parent;
@@ -56,9 +57,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Apply visibility
     clauses.forEach(clause => {
       clause.style.display = showIds.has(clause.dataset.id) ? 'block' : 'none';
     });
+  }
+
+  // Event handlers
+  jQuery(select).on('change', () => {
+    const selected = jQuery(select).val() || [];
+    applyFilter(selected);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    jQuery(select).val(null).trigger('change');
+    applyFilter([]);
   });
 });
