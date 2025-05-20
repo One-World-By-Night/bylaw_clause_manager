@@ -17,8 +17,8 @@ Each bylaw clause is a WordPress post with fields:
 - **Sort Order**
 - **Tags** (e.g., `anarch`, `caitiff`, `always`)
 - **Vote Date** (e.g., *March 10, 2024*)
-- **Vote Reference** (e.g., *VC-22-003*)
-- **Bylaw Group** (e.g., `character`, `coordinator`, `council`) for filtering different rulebooks
+- **Vote Reference** (e.g., *1000001_*)
+- **Bylaw Group** (e.g., `character`, `coordinator`, `council`) for filtering different sources
 
 ### 2. **Recursive Rendering**
 A shortcode `[render_bylaws group="character"]` renders clauses by group:
@@ -35,7 +35,7 @@ A shortcode `[render_bylaws group="character"]` renders clauses by group:
   - `Reference: <reference>` (if set)
 - If **both fields are empty**, no tooltip is shown — avoiding unnecessary clutter or blank hovers.
 - Example tooltip:  
-  _Vote Date: March 10, 2024 | Reference: VC-22-003_
+  _Vote Date: March 10, 2024 | Reference: 1000001_
 
 ### 4. **Tag-Based Filtering with Select2**
 A Select2-powered multi-select dropdown dynamically loads all tags used across clauses:
