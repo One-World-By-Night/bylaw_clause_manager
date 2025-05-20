@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bylaw Clause Manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
- * Version: 1.2
+ * Version: 1.0.6
  * Author: OWBN
  */
 
@@ -57,11 +57,118 @@ function bcm_register_acf_fields() {
 }
 add_action('acf/init', 'bcm_register_acf_fields');
 
+// Improve ACF dropdown display for Parent Clause field
+add_filter('acf/fields/post_object/result/name=parent_clause', function($title, $post, $field, $post_id) {
+    $section_id = get_field('section_id', $post->ID);
+    return $title . ' [' . $section_id . ']';
+}, 10, 4);
+
+// Add custom columns to admin list view
+add_filter('manage_bylaw_clause_posts_columns', function($columns) {
+    $new = [];
+    foreach ($columns as $key => $label) {
+        $new[$key] = $label;
+        if ($key === 'title') {
+            $new['bylaw_group'] = 'Bylaw Group';
+            $new['parent_clause'] = 'Parent Clause';
+        }
+    }
+    return $new;
+});
+
+add_action('manage_bylaw_clause_posts_custom_column', function($column, $post_id) {
+    if ($column === 'bylaw_group') {
+        $val = get_field('bylaw_group', $post_id);
+        echo esc_html(ucfirst($val) ?: '—');
+    } elseif ($column === 'parent_clause') {
+        $parent_id = get_field('parent_clause', $post_id);
+        if ($parent_id) {
+            echo esc_html(get_the_title($parent_id));
+        } else {
+            echo '—';
+        }
+    }
+}, 10, 2);
+
+add_filter('manage_edit-bylaw_clause_sortable_columns', function($columns) {
+    $columns['bylaw_group'] = 'bylaw_group';
+    $columns['parent_clause'] = 'parent_clause';
+    return $columns;
+});
+
+add_action('pre_get_posts', function($query) {
+    if (!is_admin() || !$query->is_main_query()) return;
+
+    $orderby = $query->get('orderby');
+
+    if ($orderby === 'bylaw_group') {
+        $query->set('meta_key', 'bylaw_group');
+        $query->set('orderby', 'meta_value');
+    }
+
+    if ($orderby === 'parent_clause') {
+        $query->set('meta_key', 'parent_clause');
+        $query->set('orderby', 'meta_value');
+    }
+
+    if ($query->get('post_type') === 'bylaw_clause' && isset($_GET['bylaw_group']) && $_GET['bylaw_group'] !== '') {
+        $query->set('meta_query', [[
+            'key' => 'bylaw_group',
+            'value' => sanitize_text_field($_GET['bylaw_group']),
+            'compare' => '='
+        ]]);
+    }
+});
+
+add_action('restrict_manage_posts', function() {
+    global $typenow;
+    if ($typenow !== 'bylaw_clause') return;
+
+    $selected = $_GET['bylaw_group'] ?? '';
+    $options = [
+        '' => 'All Bylaw Groups',
+        'character' => 'Character',
+        'council' => 'Council',
+        'coordinator' => 'Coordinator',
+    ];
+
+    echo '<select name="bylaw_group">';
+    foreach ($options as $val => $label) {
+        printf(
+            '<option value="%s"%s>%s</option>',
+            esc_attr($val),
+            selected($selected, $val, false),
+            esc_html($label)
+        );
+    }
+    echo '</select>';
+});
+
 // Recursive Rendering Function with Anchors and Group Filtering
 function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
-    $meta_query = [ [ 'key' => 'parent_clause', 'value' => $parent_id, 'compare' => '=' ] ];
+    $meta_query = [];
+
+    if ($parent_id === 0) {
+        $meta_query[] = [
+            'relation' => 'OR',
+            [ 'key' => 'parent_clause', 'compare' => 'NOT EXISTS' ],
+            [ 'key' => 'parent_clause', 'value' => '', 'compare' => '=' ],
+            [ 'key' => 'parent_clause', 'value' => '0', 'compare' => '=' ]
+        ];
+    } else {
+        $meta_query[] = [
+            'key' => 'parent_clause',
+            'value' => $parent_id,
+            'compare' => '='
+        ];
+    }
+
     if ($depth === 0 && $group) {
-        $meta_query[] = [ 'key' => 'bylaw_group', 'value' => $group, 'compare' => '=' ];
+        $meta_query[] = [
+            'key' => 'bylaw_group',
+            'value' => $group,
+            'compare' => '='
+        ];
     }
 
     $clauses = get_posts([
@@ -83,6 +190,10 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
         $parent = get_field('parent_clause', $clause->ID);
         $vote_date = get_field('vote_date', $clause->ID);
         $vote_ref = get_field('vote_reference', $clause->ID);
+
+        if ((int) $clause->ID === (int) $parent) {
+            continue;
+        }
 
         $class_string = '';
         $tag_array = [];
@@ -107,7 +218,7 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
              (!empty($tooltip) ? 'title="' . esc_attr($tooltip) . '" ' : '') .
              'style="margin-left:' . (20 * $depth) . 'px;">';
 
-        echo '<strong>' . esc_html($section . '. ' . $label) . '</strong>';
+        echo '<span class="bylaw-label">' . esc_html($section . '. ' . $label) . '</span>';
 
         if (!empty(trim(strip_tags($content)))) {
             echo '<div class="bylaw-content">' . $content . '</div>';

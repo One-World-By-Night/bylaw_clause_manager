@@ -1,4 +1,4 @@
-# Executive Summary
+# Summary
 
 **Bylaw Clause Manager** is a custom WordPress plugin that allows organizations like OWbN to manage a complex, hierarchical set of bylaws in a structured, modular, and trackable way. Each clause is independently editable, tagged for filtering, version-controlled, and rendered in a readable nested format — just like a legal document, but with modern digital accessibility.
 
@@ -20,6 +20,8 @@ Each bylaw clause is a WordPress post with fields:
 - **Vote Reference** (e.g., *1000001*)
 - **Bylaw Group** (e.g., `character`, `coordinator`, `council`) for filtering different sources
 
+---
+
 ### 2. **Recursive Rendering**
 A shortcode `[render_bylaws group="character"]` renders clauses by group:
 - Automatically nests based on parent-child relationships.
@@ -27,6 +29,8 @@ A shortcode `[render_bylaws group="character"]` renders clauses by group:
 - Outputs metadata (`data-id`, `data-parent`) for JavaScript filtering.
 - Adds a tooltip (`title` attribute) if vote metadata is present.
 - Generates anchored links using section IDs (e.g., `#clause-2-g-i-3`).
+
+---
 
 ### 3. **Vote Metadata Display (Hover Tooltip)**
 - If either **vote date** or **vote reference** exists for a clause, the plugin adds a tooltip to the clause block.
@@ -37,6 +41,8 @@ A shortcode `[render_bylaws group="character"]` renders clauses by group:
 - Example tooltip:  
   _Vote Date: March 10, 2024 | Reference: 1000001_
 
+---
+
 ### 4. **Tag-Based Filtering with Select2**
 A Select2-powered multi-select dropdown dynamically loads all tags used across clauses:
 - Allows users to filter by terms like `anarch`, `caitiff`, etc.
@@ -46,10 +52,21 @@ A Select2-powered multi-select dropdown dynamically loads all tags used across c
   - **All ancestor clauses** are also shown for readability.
   - **Clauses tagged `always`** are **always visible**, even when filters are active.
 
+---
+
 ### 5. **Print / Export Support**
 - A **“Print / Export PDF” button** is included above the clause tree.
 - When clicked, it prints only the currently visible clauses (honoring active filters).
 - Useful for exporting filtered views of specific sections like “Caitiff-only” rules or a Coordinator-specific handbook.
+
+---
+
+### 6. **Enhanced Admin Experience**
+The WordPress admin interface for `Bylaw Clauses` includes:
+- **Custom columns**: `Bylaw Group`, `Parent Clause`, and sortable `Date`
+- **Sortable columns**: Bylaw Group and Parent Clause
+- **Admin filtering dropdown**: Filter clauses by `Bylaw Group` in the dashboard
+- **Improved display**: Parent dropdowns show both the title and section ID
 
 ---
 
