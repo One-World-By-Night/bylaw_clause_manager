@@ -146,3 +146,14 @@ function bcm_enqueue_assets() {
     wp_enqueue_script('bcm-filter', $plugin_url . 'js/filter.js', ['jquery', 'select2'], false, true);
 }
 add_action('wp_enqueue_scripts', 'bcm_enqueue_assets');
+
+// Tell ACF to save JSON definitions in the plugin folder
+add_filter('acf/settings/save_json', function ($path) {
+    return plugin_dir_path(__FILE__) . 'acf-json';
+});
+
+// Tell ACF to load JSON definitions from the plugin folder
+add_filter('acf/settings/load_json', function ($paths) {
+    $paths[] = plugin_dir_path(__FILE__) . 'acf-json';
+    return $paths;
+});

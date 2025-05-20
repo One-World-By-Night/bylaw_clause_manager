@@ -1,0 +1,80 @@
+{
+  "key": "group_bcm_bylaw_fields",
+  "title": "Bylaw Clause Fields",
+  "fields": [
+    {
+      "key": "field_bylaw_group",
+      "label": "Bylaw Group",
+      "name": "bylaw_group",
+      "type": "select",
+      "choices": {
+        "character": "Character",
+        "council": "Council",
+        "coordinator": "Coordinator"
+      },
+      "allow_null": 0,
+      "multiple": 0,
+      "ui": 1,
+      "return_format": "value"
+    },
+    {
+      "key": "field_section_id",
+      "label": "Section ID",
+      "name": "section_id",
+      "type": "text"
+    },
+    {
+      "key": "field_label",
+      "label": "Label",
+      "name": "label",
+      "type": "text"
+    },
+    {
+      "key": "field_tags",
+      "label": "Tags (comma-separated)",
+      "name": "tags",
+      "type": "text"
+    },
+    {
+      "key": "field_sort_order",
+      "label": "Sort Order",
+      "name": "sort_order",
+      "type": "number"
+    },
+    {
+      "key": "field_vote_date",
+      "label": "Vote Date",
+      "name": "vote_date",
+      "type": "date_picker",
+      "display_format": "F j, Y",
+      "return_format": "F j, Y"
+    },
+    {
+      "key": "field_vote_reference",
+      "label": "Vote Reference",
+      "name": "vote_reference",
+      "type": "text"
+    },
+    {
+      "key": "field_parent_clause",
+      "label": "Parent Clause",
+      "name": "parent_clause",
+      "type": "post_object",
+      "post_type": [
+        "bylaw_clause"
+      ],
+      "return_format": "id",
+      "allow_null": 1
+    }
+  ],
+  "location": [
+    [
+      {
+        "param": "post_type",
+        "operator": "==",
+        "value": "bylaw_clause"
+      }
+    ]
+  ],
+  "active": true
+}
