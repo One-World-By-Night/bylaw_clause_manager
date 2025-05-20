@@ -17,7 +17,7 @@ Each bylaw clause is a WordPress post with fields:
 - **Sort Order**
 - **Tags** (e.g., `anarch`, `caitiff`, `always`)
 - **Vote Date** (e.g., *March 10, 2024*)
-- **Vote Reference** (e.g., *1000001_*)
+- **Vote Reference** (e.g., *1000001*)
 - **Bylaw Group** (e.g., `character`, `coordinator`, `council`) for filtering different sources
 
 ### 2. **Recursive Rendering**
