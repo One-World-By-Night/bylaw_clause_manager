@@ -2,8 +2,15 @@
 /**
  * Plugin Name: Bylaw Clause Manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
- * Version: 1.0.9
- * Author: OWBN
+ * Version: 1.0.10
+ * Author: OWBN (Greg H.)
+ * Author URI: https://www.owbn.net
+ * License: MIT
+ * License URI: https://opensource.org/licenses/MIT
+ * Text Domain: bylaw-clause-manager
+ * Domain Path: /languages
+ * GitHub Plugin URI: https://github.com/One-World-By-Night/bylaw_clause_manager
+ * GitHub Branch: main
  */
 
 // Register Custom Post Type
@@ -43,13 +50,21 @@ function bcm_register_acf_fields() {
                     'ui' => 1,
                     'return_format' => 'value',
                 ],
+                [
+                    'key' => 'field_parent_clause',
+                    'label' => 'Parent Clause',
+                    'name' => 'parent_clause',
+                    'type' => 'post_object',
+                    'post_type' => ['bylaw_clause'],
+                    'return_format' => 'id',
+                    'allow_null' => 1,
+                    'multiple' => 0,
+                ],
                 [ 'key' => 'field_section_id', 'label' => 'Section ID', 'name' => 'section_id', 'type' => 'text' ],
-                [ 'key' => 'field_label', 'label' => 'Label', 'name' => 'label', 'type' => 'text' ],
                 [ 'key' => 'field_tags', 'label' => 'Tags (comma-separated)', 'name' => 'tags', 'type' => 'text' ],
                 [ 'key' => 'field_sort_order', 'label' => 'Sort Order', 'name' => 'sort_order', 'type' => 'number' ],
                 [ 'key' => 'field_vote_date', 'label' => 'Vote Date', 'name' => 'vote_date', 'type' => 'date_picker', 'display_format' => 'F j, Y', 'return_format' => 'F j, Y' ],
                 [ 'key' => 'field_vote_reference', 'label' => 'Vote Reference', 'name' => 'vote_reference', 'type' => 'text' ],
-                [ 'key' => 'field_parent_clause', 'label' => 'Parent Clause', 'name' => 'parent_clause', 'type' => 'post_object', 'post_type' => ['bylaw_clause'], 'return_format' => 'id', 'allow_null' => 1 ],
             ],
             'location' => [[ [ 'param' => 'post_type', 'operator' => '==', 'value' => 'bylaw_clause' ]]],
         ]);
@@ -151,8 +166,7 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
 
     foreach ($clauses as $clause) {
         $section = get_field('section_id', $clause->ID);
-        $label = get_field('label', $clause->ID);
-        $content = get_field('content', $clause->ID);
+        $content = $clause->post_content;
         $tags = get_field('tags', $clause->ID);
         $parent = get_field('parent_clause', $clause->ID);
         $vote_date = get_field('vote_date', $clause->ID);
@@ -179,14 +193,13 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
         $anchor_id = sanitize_title($section);
         echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ? $parent : 0) . '" style="margin-left:' . (20 * $depth) . 'px;">';
 
-        echo '<div class="bylaw-label-wrap">';
-        echo '<span class="bylaw-label-number">' . esc_html($section) . '.</span>';
-        echo '<span class="bylaw-label-text">' . esc_html($label) . $vote_marker . '</span>';
-        echo '</div>';
-
-        if (!empty(trim(strip_tags($content)))) {
-            echo '<div class="bylaw-content">' . $content . '</div>';
-        }
+        echo "<div class=\"bylaw-label-wrap\">\n";
+        echo "  <span class=\"bylaw-label-number\">" . esc_html($section) . ".</span>\n";
+        echo "  <div class=\"bylaw-label-text\">\n";
+        echo      apply_filters('the_content', $content) . "\n";
+        echo "    " . $vote_marker . "\n";
+        echo "  </div>\n";
+        echo "</div>\n";
 
         echo '</div>';
 
@@ -243,9 +256,9 @@ add_filter('acf/fields/post_object/query/name=parent_clause', function($args, $f
 
 add_filter('acf/fields/post_object/result/name=parent_clause', function($title, $post, $field, $post_id) {
     $section_id = get_field('section_id', $post->ID);
-    $label = get_field('label', $post->ID);
-    $label_preview = $label ? mb_substr($label, 0, 25) . (mb_strlen($label) > 25 ? '…' : '') : '';
-    return "{$post->post_title} {$section_id} {$label_preview}";
+    $preview = mb_substr(strip_tags($post->post_content), 0, 25);
+    $preview .= (mb_strlen($post->post_content) > 25 ? '…' : '');
+    return "{$post->post_title} {$section_id} {$preview}";
 }, 10, 4);
 
 function bcm_enqueue_assets() {
@@ -260,7 +273,7 @@ function bcm_output_inline_assets() {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <style>
         .bylaw-clause {
-            margin-bottom: 1em;
+            margin-bottom: 0.25em;
         }
          .bylaw-clause strong {
             display: block;
@@ -272,12 +285,11 @@ function bcm_output_inline_assets() {
             font-size: 0.95em;
         }
         .bylaw-label-wrap {
-            display: inline-flex;
-            align-items: baseline;
-            gap: 0.4em;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.25em;
             flex-wrap: wrap;
-            margin-bottom: 0.25em;
-            line-height: 1.4;
+            line-height: 1;
         }
 
         .bylaw-label-number {
@@ -289,6 +301,14 @@ function bcm_output_inline_assets() {
             word-break: break-word;
             flex: 1;
             min-width: 0;
+        }
+
+        .bylaw-content {
+            margin-left: 1em;
+            font-size: 0.95em;
+        }
+        .bylaw-content p {
+            margin: 0.25em 0; /* Reduce spacing between paragraphs */
         }
        .vote-tooltip {
             position: relative;

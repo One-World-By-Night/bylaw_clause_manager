@@ -18,15 +18,20 @@
       "return_format": "value"
     },
     {
+      "key": "field_parent_clause",
+      "label": "Parent Clause",
+      "name": "parent_clause",
+      "type": "post_object",
+      "post_type": [
+        "bylaw_clause"
+      ],
+      "return_format": "id",
+      "allow_null": 1
+    },
+    {
       "key": "field_section_id",
       "label": "Section ID",
       "name": "section_id",
-      "type": "text"
-    },
-    {
-      "key": "field_label",
-      "label": "Label",
-      "name": "label",
       "type": "text"
     },
     {
@@ -54,17 +59,6 @@
       "label": "Vote Reference",
       "name": "vote_reference",
       "type": "text"
-    },
-    {
-      "key": "field_parent_clause",
-      "label": "Parent Clause",
-      "name": "parent_clause",
-      "type": "post_object",
-      "post_type": [
-        "bylaw_clause"
-      ],
-      "return_format": "id",
-      "allow_null": 1
     }
   ],
   "location": [
