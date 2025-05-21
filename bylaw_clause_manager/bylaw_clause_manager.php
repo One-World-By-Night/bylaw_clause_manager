@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bylaw Clause Manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
- * Version: 1.0.10
+ * Version: 1.0.11
  * Author: OWBN (Greg H.)
  * Author URI: https://www.owbn.net
  * License: MIT
@@ -71,6 +71,39 @@ function bcm_register_acf_fields() {
     }
 }
 add_action('acf/init', 'bcm_register_acf_fields');
+
+function bcm_fix_clause_parents() {
+    $posts = get_posts([
+        'post_type' => 'bylaw_clause',
+        'numberposts' => -1,
+        'post_status' => ['draft', 'publish', 'pending', 'future', 'private'],
+        'meta_key' => 'section_id',
+    ]);
+
+    // Build a lookup of section_id => post ID
+    $id_map = [];
+    foreach ($posts as $post) {
+        $id_map[get_field('section_id', $post->ID)] = $post->ID;
+    }
+
+    $updated = 0;
+    foreach ($posts as $post) {
+        $parent_section = get_post_meta($post->ID, 'parent', true); // from import metadata
+        if (!$parent_section || !isset($id_map[$parent_section])) {
+            continue;
+        }
+
+        $target_parent_id = $id_map[$parent_section];
+        $current_parent_id = get_field('parent_clause', $post->ID);
+
+        if ((int) $current_parent_id !== (int) $target_parent_id) {
+            update_field('field_parent_clause', $target_parent_id, $post->ID);
+            $updated++;
+        }
+    }
+
+    echo "<div class='notice notice-success'><p>✅ $updated parent clauses updated.</p></div>";
+}
 
 add_filter('acf/fields/post_object/result/name=parent_clause', function($title, $post, $field, $post_id) {
     $section_id = get_field('section_id', $post->ID);
@@ -272,6 +305,38 @@ function bcm_output_inline_assets() {
     ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <style>
+        #bcm-toolbar {
+            margin-bottom: 1em;
+        }
+        #bcm-toolbar button {
+            padding: 4px 10px;
+            font-size: 0.9em;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background-color: #f5f5f5;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            line-height: 1.2;
+        }
+
+        #bcm-toolbar button:hover {
+            background-color: #e6e6e6;
+            border-color: #999;
+        }
+
+        #bcm-toolbar label {
+            margin-right: 0.5em;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        #bcm-toolbar {
+            margin-bottom: 1em;
+            display: flex;
+            align-items: center;
+            gap: 0.75em;
+            flex-wrap: wrap;
+        }
         .bylaw-clause {
             margin-bottom: 0.25em;
         }
@@ -349,6 +414,118 @@ function bcm_output_inline_assets() {
 }
 add_action('wp_head', 'bcm_output_inline_assets', 100);
 
+function bcm_enqueue_print_styles() {
+    // Adjust the path as needed
+    $theme_print_css = get_stylesheet_directory_uri() . '/print.css';
+
+    wp_enqueue_style('bcm-theme-print', $theme_print_css, [], null, 'print');
+}
+add_action('wp_enqueue_scripts', 'bcm_enqueue_print_styles');
+
 add_filter('acf/settings/save_json', fn($path) => plugin_dir_path(__FILE__) . 'acf-json');
 add_filter('acf/settings/load_json', fn($paths) => array_merge($paths, [plugin_dir_path(__FILE__) . 'acf-json']));
 add_action('wp_enqueue_scripts', 'bcm_enqueue_assets', 100);
+
+// Render custom bulk edit fields
+add_action('bulk_edit_custom_box', function($column_name, $post_type) {
+    if ($post_type !== 'bylaw_clause') return;
+
+    if ($column_name === 'bylaw_group' || $column_name === 'parent_clause') {
+        ?>
+        <fieldset class="inline-edit-col-left">
+            <div class="inline-edit-col">
+                <?php if ($column_name === 'bylaw_group'): ?>
+                    <label class="alignleft">
+                        <span class="title">Bylaw Group</span>
+                        <select name="bcm_bylaw_group">
+                            <option value="">— No Change —</option>
+                            <option value="character">Character</option>
+                            <option value="council">Council</option>
+                            <option value="coordinator">Coordinator</option>
+                        </select>
+                    </label>
+                <?php endif; ?>
+
+                <?php if ($column_name === 'parent_clause'): 
+                    $clauses = get_posts([
+                        'post_type' => 'bylaw_clause',
+                        'posts_per_page' => -1,
+                        'orderby' => 'title',
+                        'order' => 'ASC',
+                        'fields' => 'ids'
+                    ]);
+                    ?>
+                    <label class="alignleft">
+                        <span class="title">Parent Clause</span>
+                        <select name="bcm_parent_clause">
+                            <option value="">— No Change —</option>
+                            <?php foreach ($clauses as $cid): ?>
+                                <?php
+                                    $sid = get_field('section_id', $cid);
+                                    $label = get_the_title($cid) . ($sid ? " [$sid]" : "");
+                                ?>
+                                <option value="<?= esc_attr($cid) ?>"><?= esc_html($label) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                <?php endif; ?>
+            </div>
+        </fieldset>
+        <?php
+    }
+}, 10, 2);
+
+// JavaScript to inject selected values for each post in bulk
+add_action('admin_footer-edit.php', function() {
+    global $post_type;
+    if ($post_type !== 'bylaw_clause') return;
+    ?>
+    <script>
+        jQuery(function($) {
+            $('#bulk_edit').on('submit', function() {
+                const groupVal = $('select[name="bcm_bylaw_group"]').val();
+                const parentVal = $('select[name="bcm_parent_clause"]').val();
+
+                $('#bulk-edit input[name="post[]"]').each(function() {
+                    const id = $(this).val();
+                    if (groupVal) {
+                        $('<input>', {
+                            type: 'hidden',
+                            name: 'bulk_bcm_bylaw_group[' + id + ']',
+                            value: groupVal
+                        }).appendTo(this.form);
+                    }
+                    if (parentVal) {
+                        $('<input>', {
+                            type: 'hidden',
+                            name: 'bulk_bcm_parent_clause[' + id + ']',
+                            value: parentVal
+                        }).appendTo(this.form);
+                    }
+                });
+            });
+        });
+    </script>
+    <?php
+});
+
+// Save bulk-edit custom fields
+add_action('save_post_bylaw_clause', function($post_id) {
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+
+    // Bylaw Group
+    if (isset($_REQUEST['bulk_bcm_bylaw_group'][$post_id])) {
+        $value = sanitize_text_field($_REQUEST['bulk_bcm_bylaw_group'][$post_id]);
+        if (in_array($value, ['character', 'council', 'coordinator'], true)) {
+            update_field('field_bylaw_group', $value, $post_id);
+        }
+    }
+
+    // Parent Clause
+    if (isset($_REQUEST['bulk_bcm_parent_clause'][$post_id])) {
+        $pid = (int) $_REQUEST['bulk_bcm_parent_clause'][$post_id];
+        if ($pid && get_post_type($pid) === 'bylaw_clause') {
+            update_field('field_parent_clause', $pid, $post_id);
+        }
+    }
+});
