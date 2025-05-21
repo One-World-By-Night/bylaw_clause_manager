@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bylaw Clause Manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
- * Version: 1.0.8
+ * Version: 1.0.9
  * Author: OWBN
  */
 
@@ -207,7 +207,19 @@ function bcm_output_inline_assets() {
     ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <style>
-        .vote-tooltip {
+        .bylaw-clause {
+            margin-bottom: 1em;
+        }
+         .bylaw-clause strong {
+            display: block;
+            font-size: 1.1em;
+            margin-bottom: 0.25em;
+        }
+        .bylaw-content {
+            margin-left: 1em;
+            font-size: 0.95em;
+        }
+       .vote-tooltip {
             position: relative;
             display: inline-block;
             cursor: help;
