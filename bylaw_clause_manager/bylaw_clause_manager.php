@@ -137,6 +137,7 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
     if ($depth === 0 && $group) {
         $meta_query[] = [ 'key' => 'bylaw_group', 'value' => $group, 'compare' => '=' ];
     }
+
     $clauses = get_posts([
         'post_type' => 'bylaw_clause',
         'meta_query' => $meta_query,
@@ -145,7 +146,9 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
         'order' => 'ASC',
         'numberposts' => -1
     ]);
+
     if (!$clauses) return;
+
     foreach ($clauses as $clause) {
         $section = get_field('section_id', $clause->ID);
         $label = get_field('label', $clause->ID);
@@ -175,11 +178,18 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
 
         $anchor_id = sanitize_title($section);
         echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ? $parent : 0) . '" style="margin-left:' . (20 * $depth) . 'px;">';
-        echo '<span class="bylaw-label">' . esc_html($section . '. ' . $label) . $vote_marker . '</span>';
+
+        echo '<div class="bylaw-label-wrap">';
+        echo '<span class="bylaw-label-number">' . esc_html($section) . '.</span>';
+        echo '<span class="bylaw-label-text">' . esc_html($label) . $vote_marker . '</span>';
+        echo '</div>';
+
         if (!empty(trim(strip_tags($content)))) {
             echo '<div class="bylaw-content">' . $content . '</div>';
         }
+
         echo '</div>';
+
         bcm_render_bylaw_tree($clause->ID, $depth + 1, $group);
     }
 }
@@ -195,6 +205,48 @@ add_shortcode('render_bylaws', function($atts) {
     bcm_render_bylaw_tree(0, 0, $atts['group']);
     return ob_get_clean();
 });
+
+add_filter('acf/prepare_field/name=parent_clause', function($field) {
+    $current_group = get_field('bylaw_group');
+
+    if ($current_group) {
+        $field['instructions'] = 'Only clauses from the selected Bylaw Group ("' . ucfirst($current_group) . '") are shown here.';
+    } else {
+        $field['instructions'] = 'Select a Bylaw Group first to filter available parent clauses.';
+    }
+
+    return $field;
+});
+
+add_filter('acf/fields/post_object/query/name=parent_clause', function($args, $field, $post_id) {
+    if (!$post_id || get_post_type($post_id) !== 'bylaw_clause') return $args;
+
+    // Get the group from current post
+    $group = get_field('bylaw_group', $post_id);
+
+    if (!$group) return $args;
+
+    // Add meta_query to filter by matching bylaw_group
+    $args['meta_query'] = [
+        [
+            'key' => 'bylaw_group',
+            'value' => $group,
+            'compare' => '='
+        ]
+    ];
+
+    // Optionally exclude current post (avoid assigning itself as parent)
+    $args['post__not_in'] = [$post_id];
+
+    return $args;
+}, 10, 3);
+
+add_filter('acf/fields/post_object/result/name=parent_clause', function($title, $post, $field, $post_id) {
+    $section_id = get_field('section_id', $post->ID);
+    $label = get_field('label', $post->ID);
+    $label_preview = $label ? mb_substr($label, 0, 25) . (mb_strlen($label) > 25 ? '…' : '') : '';
+    return "{$post->post_title} {$section_id} {$label_preview}";
+}, 10, 4);
 
 function bcm_enqueue_assets() {
     $plugin_url = plugins_url('', __FILE__);
@@ -213,11 +265,30 @@ function bcm_output_inline_assets() {
          .bylaw-clause strong {
             display: block;
             font-size: 1.1em;
-            margin-bottom: 0.25em;
+            margin-bottom: 0.1em;
         }
         .bylaw-content {
             margin-left: 1em;
             font-size: 0.95em;
+        }
+        .bylaw-label-wrap {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.4em;
+            flex-wrap: wrap;
+            margin-bottom: 0.25em;
+            line-height: 1.4;
+        }
+
+        .bylaw-label-number {
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .bylaw-label-text {
+            word-break: break-word;
+            flex: 1;
+            min-width: 0;
         }
        .vote-tooltip {
             position: relative;
