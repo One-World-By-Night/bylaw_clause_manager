@@ -41,12 +41,6 @@
       "type": "text"
     },
     {
-      "key": "field_sort_order",
-      "label": "Sort Order",
-      "name": "sort_order",
-      "type": "number"
-    },
-    {
       "key": "field_vote_date",
       "label": "Vote Date",
       "name": "vote_date",
@@ -59,6 +53,12 @@
       "label": "Vote Reference",
       "name": "vote_reference",
       "type": "text"
+    },
+    {
+      "key": "field_vote_url",
+      "label": "Vote URL",
+      "name": "vote_url",
+      "type": "url"
     }
   ],
   "location": [

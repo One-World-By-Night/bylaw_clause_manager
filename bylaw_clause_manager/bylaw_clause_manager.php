@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bylaw Clause Manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
- * Version: 1.0.11
+ * Version: 1.0.23
  * Author: OWBN (Greg H.)
  * Author URI: https://www.owbn.net
  * License: MIT
@@ -12,6 +12,19 @@
  * GitHub Plugin URI: https://github.com/One-World-By-Night/bylaw_clause_manager
  * GitHub Branch: main
  */
+
+// Ensure ACF is available before proceeding
+if (!function_exists('acf_add_local_field_group')) {
+    add_action('admin_notices', function() {
+        echo '<div class="notice notice-error"><p><strong>Bylaw Clause Manager</strong> requires the <a href="https://wordpress.org/plugins/advanced-custom-fields/">Advanced Custom Fields</a> plugin to be installed and activated.</p></div>';
+    });
+    return;
+}
+
+// Hook ACF JSON path
+add_filter('acf/settings/save_json', fn($path) => plugin_dir_path(__FILE__) . 'acf-json');
+add_filter('acf/settings/load_json', fn($paths) => array_merge($paths, [plugin_dir_path(__FILE__) . 'acf-json']));
+
 
 // Register Custom Post Type
 function bcm_register_bylaw_clause_cpt() {
@@ -28,49 +41,6 @@ function bcm_register_bylaw_clause_cpt() {
 }
 add_action('init', 'bcm_register_bylaw_clause_cpt');
 
-// Register ACF Fields
-function bcm_register_acf_fields() {
-    if (function_exists('acf_add_local_field_group')) {
-        acf_add_local_field_group([
-            'key' => 'group_bcm_bylaw_fields',
-            'title' => 'Bylaw Clause Fields',
-            'fields' => [
-                [
-                    'key' => 'field_bylaw_group',
-                    'label' => 'Bylaw Group',
-                    'name' => 'bylaw_group',
-                    'type' => 'select',
-                    'choices' => [
-                        'character' => 'Character',
-                        'council' => 'Council',
-                        'coordinator' => 'Coordinator',
-                    ],
-                    'allow_null' => 0,
-                    'multiple' => 0,
-                    'ui' => 1,
-                    'return_format' => 'value',
-                ],
-                [
-                    'key' => 'field_parent_clause',
-                    'label' => 'Parent Clause',
-                    'name' => 'parent_clause',
-                    'type' => 'post_object',
-                    'post_type' => ['bylaw_clause'],
-                    'return_format' => 'id',
-                    'allow_null' => 1,
-                    'multiple' => 0,
-                ],
-                [ 'key' => 'field_section_id', 'label' => 'Section ID', 'name' => 'section_id', 'type' => 'text' ],
-                [ 'key' => 'field_tags', 'label' => 'Tags (comma-separated)', 'name' => 'tags', 'type' => 'text' ],
-                [ 'key' => 'field_sort_order', 'label' => 'Sort Order', 'name' => 'sort_order', 'type' => 'number' ],
-                [ 'key' => 'field_vote_date', 'label' => 'Vote Date', 'name' => 'vote_date', 'type' => 'date_picker', 'display_format' => 'F j, Y', 'return_format' => 'F j, Y' ],
-                [ 'key' => 'field_vote_reference', 'label' => 'Vote Reference', 'name' => 'vote_reference', 'type' => 'text' ],
-            ],
-            'location' => [[ [ 'param' => 'post_type', 'operator' => '==', 'value' => 'bylaw_clause' ]]],
-        ]);
-    }
-}
-add_action('acf/init', 'bcm_register_acf_fields');
 
 function bcm_fix_clause_parents() {
     $posts = get_posts([
@@ -140,7 +110,10 @@ add_filter('manage_edit-bylaw_clause_sortable_columns', function($columns) {
 
 add_action('pre_get_posts', function($query) {
     if (!is_admin() || !$query->is_main_query()) return;
+
     $orderby = $query->get('orderby');
+
+    // Handle sortable columns
     if ($orderby === 'bylaw_group') {
         $query->set('meta_key', 'bylaw_group');
         $query->set('orderby', 'meta_value');
@@ -149,29 +122,73 @@ add_action('pre_get_posts', function($query) {
         $query->set('meta_key', 'parent_clause');
         $query->set('orderby', 'meta_value');
     }
-    if ($query->get('post_type') === 'bylaw_clause' && isset($_GET['bylaw_group']) && $_GET['bylaw_group'] !== '') {
-        $query->set('meta_query', [[
-            'key' => 'bylaw_group',
-            'value' => sanitize_text_field($_GET['bylaw_group']),
-            'compare' => '='
-        ]]);
+
+    if ($query->get('post_type') === 'bylaw_clause') {
+        // Filter by Bylaw Group
+        if (!empty($_GET['bylaw_group'])) {
+            $query->set('meta_query', [[
+                'key' => 'bylaw_group',
+                'value' => sanitize_text_field($_GET['bylaw_group']),
+                'compare' => '='
+            ]]);
+        }
+
+        // Filter by Title (map bcm_title_filter into s)
+        if (!empty($_GET['bcm_title_filter'])) {
+            $query->set('s', sanitize_text_field($_GET['bcm_title_filter']));
+        }
+
+        // Default sort by title
+        if (!$orderby) {
+            $query->set('orderby', 'title');
+            $query->set('order', 'ASC');
+        }
     }
 });
+
+add_filter('posts_search', function($search, $wp_query) {
+    global $wpdb;
+    if (!is_admin() || !$wp_query->is_main_query()) return $search;
+    if ($wp_query->get('post_type') !== 'bylaw_clause') return $search;
+
+    $input = $wp_query->query_vars['s'] ?? '';
+    if ($input === '') return $search;
+
+    $like = $wpdb->esc_like($input) . '%'; // Note: trailing %, no leading %
+    return " AND {$wpdb->posts}.post_title LIKE '{$like}' ";
+}, 10, 2);
 
 add_action('restrict_manage_posts', function() {
     global $typenow;
     if ($typenow !== 'bylaw_clause') return;
+
+    // Bylaw Group Filter
     $selected = $_GET['bylaw_group'] ?? '';
-    $options = [ '' => 'All Bylaw Groups', 'character' => 'Character', 'council' => 'Council', 'coordinator' => 'Coordinator' ];
+    $options = [
+        '' => 'All Bylaw Groups',
+        'character' => 'Character',
+        'council' => 'Council',
+        'coordinator' => 'Coordinator'
+    ];
     echo '<select name="bylaw_group">';
     foreach ($options as $val => $label) {
-        printf('<option value="%s"%s>%s</option>', esc_attr($val), selected($selected, $val, false), esc_html($label));
+        printf(
+            '<option value="%s"%s>%s</option>',
+            esc_attr($val),
+            selected($selected, $val, false),
+            esc_html($label)
+        );
     }
     echo '</select>';
+
+    // Title Filter
+    $title_filter = $_GET['bcm_title_filter'] ?? '';
+    echo '<input type="text" name="bcm_title_filter" placeholder="Filter Title" value="' . esc_attr($title_filter) . '" style="margin-left: 10px;" />';
 });
 
 function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
     $meta_query = [];
+
     if ($parent_id === 0) {
         $meta_query[] = [
             'relation' => 'OR',
@@ -182,6 +199,7 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
     } else {
         $meta_query[] = [ 'key' => 'parent_clause', 'value' => $parent_id, 'compare' => '=' ];
     }
+
     if ($depth === 0 && $group) {
         $meta_query[] = [ 'key' => 'bylaw_group', 'value' => $group, 'compare' => '=' ];
     }
@@ -189,11 +207,13 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
     $clauses = get_posts([
         'post_type' => 'bylaw_clause',
         'meta_query' => $meta_query,
-        'orderby' => 'meta_value_num',
-        'meta_key' => 'sort_order',
-        'order' => 'ASC',
-        'numberposts' => -1
+        'numberposts' => -1,
     ]);
+
+    // Sort by sequence intelligently
+    usort($clauses, function($a, $b) {
+        return bcm_sequence_to_int(get_field('sequence', $a->ID)) <=> bcm_sequence_to_int(get_field('sequence', $b->ID));
+    });
 
     if (!$clauses) return;
 
@@ -207,24 +227,19 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
 
         if ((int) $clause->ID === (int) $parent) continue;
 
+        // Tag-based classes
         $class_string = '';
-        $tag_array = [];
         if (!empty($tags)) {
             $tag_array = array_map('trim', explode(',', strtolower($tags)));
             $class_string = implode(' ', array_map('sanitize_html_class', $tag_array));
         }
 
-        $vote_marker = '';
-        if ($vote_date || $vote_ref) {
-            $tooltip_parts = [];
-            if ($vote_date) $tooltip_parts[] = 'Vote Date: ' . esc_html($vote_date);
-            if ($vote_ref) $tooltip_parts[] = 'Reference: ' . esc_html($vote_ref);
-            $tooltip_text = implode(' | ', $tooltip_parts);
-            $vote_marker = '<span class="vote-tooltip" data-tooltip="' . esc_attr($tooltip_text) . '"><sup>📜</sup></span>';
-        }
+        // Vote marker
+        $vote_marker = bcm_generate_vote_tooltip($clause->ID);
 
+        // Render block
         $anchor_id = sanitize_title($section);
-        echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ? $parent : 0) . '" style="margin-left:' . (20 * $depth) . 'px;">';
+        echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ?: 0) . '" style="margin-left:' . (20 * $depth) . 'px;">';
 
         echo "<div class=\"bylaw-label-wrap\">\n";
         echo "  <span class=\"bylaw-label-number\">" . esc_html($section) . ".</span>\n";
@@ -238,6 +253,55 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
 
         bcm_render_bylaw_tree($clause->ID, $depth + 1, $group);
     }
+}
+
+function bcm_generate_vote_tooltip($clause_id) {
+    $vote_date = get_field('vote_date', $clause_id);
+    $vote_ref  = get_field('vote_reference', $clause_id);
+    $vote_url  = get_field('vote_url', $clause_id);
+
+    if (!$vote_date && !$vote_ref && !$vote_url) return '';
+
+    $tooltip_parts = [];
+
+    if ($vote_date) $tooltip_parts[] = 'Vote Date: ' . esc_html($vote_date);
+    if ($vote_ref)  $tooltip_parts[] = 'Reference: ' . esc_html($vote_ref);
+    if ($vote_url) {
+        $tooltip_parts[] = '<a href="' . esc_url($vote_url) . '" target="_blank" rel="noopener noreferrer">View Details</a>';
+    }
+
+    return '<span class="vote-tooltip"><sup>📜</sup><div class="tooltip-content">' . implode(' | ', $tooltip_parts) . '</div></span>';
+}
+
+function bcm_sequence_to_int($seq) {
+    if (!$seq) return 999999; // fallback for blank
+
+    $seq = trim($seq);
+    $lower = strtolower($seq);
+
+    // Numeric
+    if (is_numeric($seq)) {
+        return (int)$seq;
+    }
+
+    // Letter a–z or A–Z
+    if (preg_match('/^[a-zA-Z]$/', $seq)) {
+        return ord(strtolower($seq)) - ord('a') + 1000;
+    }
+
+    // Roman numerals (i–xx)
+    $roman_map = [
+        'i'=>1,'ii'=>2,'iii'=>3,'iv'=>4,'v'=>5,
+        'vi'=>6,'vii'=>7,'viii'=>8,'ix'=>9,'x'=>10,
+        'xi'=>11,'xii'=>12,'xiii'=>13,'xiv'=>14,'xv'=>15,
+        'xvi'=>16,'xvii'=>17,'xviii'=>18,'xix'=>19,'xx'=>20
+    ];
+    if (isset($roman_map[$lower])) {
+        return 2000 + $roman_map[$lower];
+    }
+
+    // Fallback hash
+    return 900000 + crc32($seq);
 }
 
 add_shortcode('render_bylaws', function($atts) {
@@ -291,7 +355,7 @@ add_filter('acf/fields/post_object/result/name=parent_clause', function($title, 
     $section_id = get_field('section_id', $post->ID);
     $preview = mb_substr(strip_tags($post->post_content), 0, 25);
     $preview .= (mb_strlen($post->post_content) > 25 ? '…' : '');
-    return "{$post->post_title} {$section_id} {$preview}";
+    return trim(($section_id ? "{$section_id} " : '') . $post->post_title . ' ' . $preview);
 }, 10, 4);
 
 function bcm_enqueue_assets() {
@@ -301,6 +365,42 @@ function bcm_enqueue_assets() {
     wp_enqueue_script('bcm-filter', $plugin_url . '/js/filter.js', ['jquery', 'select2'], false, true);
 }
 
+add_action('admin_enqueue_scripts', function($hook) {
+    if ($hook !== 'edit.php') return;
+
+    wp_enqueue_style('select2-admin-style', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css');
+    wp_enqueue_script('select2-admin-script', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', ['jquery'], null, true);
+
+    wp_add_inline_script('select2-admin-script', <<<JS
+    jQuery(function($) {
+        function initSelect2QuickEdit() {
+            $('.bcm-select2').each(function() {
+                if (\$.fn.select2) {
+                    // Destroy if already initialized
+                    if ($(this).hasClass('select2-hidden-accessible')) {
+                        $(this).select2('destroy');
+                    }
+                    // Re-initialize
+                    $(this).select2({ width: '100%' });
+                }
+            });
+        }
+
+        // Run after Quick Edit is opened
+        $(document).on('click', '.editinline', function() {
+            setTimeout(initSelect2QuickEdit, 100);
+        });
+
+        // Also catch after inline save, which might refresh the row
+        $(document).ajaxSuccess(function(e, xhr, settings) {
+            if (settings.data && settings.data.includes('action=inline-save')) {
+                setTimeout(initSelect2QuickEdit, 200);
+            }
+        });
+    });
+    JS);
+});
+
 function bcm_output_inline_assets() {
     ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
@@ -308,6 +408,7 @@ function bcm_output_inline_assets() {
         #bcm-toolbar {
             margin-bottom: 1em;
         }
+
         #bcm-toolbar button {
             padding: 4px 10px;
             font-size: 0.9em;
@@ -331,51 +432,55 @@ function bcm_output_inline_assets() {
         }
 
         #bcm-toolbar {
-            margin-bottom: 1em;
             display: flex;
             align-items: center;
             gap: 0.75em;
             flex-wrap: wrap;
         }
+
         .bylaw-clause {
             margin-bottom: 0.25em;
         }
-         .bylaw-clause strong {
+
+        .bylaw-clause strong {
             display: block;
             font-size: 1.1em;
             margin-bottom: 0.1em;
         }
+
         .bylaw-content {
             margin-left: 1em;
             font-size: 0.95em;
+            line-height: 1.1;
         }
+
         .bylaw-label-wrap {
             display: flex;
             align-items: flex-start;
-            gap: 0.25em;
+            gap: 0.3em;
             flex-wrap: wrap;
-            line-height: 1;
+            line-height: 1.1;
         }
 
         .bylaw-label-number {
-            font-weight: bold;
+            font-weight: normal;
             white-space: nowrap;
+            font-size: 1em;
         }
 
         .bylaw-label-text {
             word-break: break-word;
             flex: 1;
             min-width: 0;
-        }
-
-        .bylaw-content {
-            margin-left: 1em;
+            line-height: 1.1;
             font-size: 0.95em;
         }
+
         .bylaw-content p {
-            margin: 0.25em 0; /* Reduce spacing between paragraphs */
+            margin: 0.25em 0;
         }
-       .vote-tooltip {
+
+        .vote-tooltip {
             position: relative;
             display: inline-block;
             cursor: help;
@@ -383,8 +488,9 @@ function bcm_output_inline_assets() {
             color: #555;
             margin-left: 4px;
         }
-        .vote-tooltip::after {
-            content: attr(data-tooltip);
+
+        .vote-tooltip .tooltip-content {
+            display: none;
             position: absolute;
             top: 120%;
             left: 50%;
@@ -393,20 +499,26 @@ function bcm_output_inline_assets() {
             color: #fff;
             padding: 6px 8px;
             border-radius: 4px;
-            white-space: pre-wrap;
             font-size: 0.75em;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease-in-out;
             z-index: 9999;
             min-width: 160px;
             max-width: 280px;
             text-align: left;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            white-space: normal;
         }
-        .vote-tooltip:hover::after {
-            opacity: 1;
-            pointer-events: auto;
+
+        .vote-tooltip:hover .tooltip-content {
+            display: block;
+        }
+
+        .tooltip-content a {
+            color: #9cf;
+            text-decoration: underline;
+        }
+
+        .tooltip-content a:hover {
+            color: #cde;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -421,111 +533,80 @@ function bcm_enqueue_print_styles() {
     wp_enqueue_style('bcm-theme-print', $theme_print_css, [], null, 'print');
 }
 add_action('wp_enqueue_scripts', 'bcm_enqueue_print_styles');
-
-add_filter('acf/settings/save_json', fn($path) => plugin_dir_path(__FILE__) . 'acf-json');
-add_filter('acf/settings/load_json', fn($paths) => array_merge($paths, [plugin_dir_path(__FILE__) . 'acf-json']));
 add_action('wp_enqueue_scripts', 'bcm_enqueue_assets', 100);
 
-// Render custom bulk edit fields
-add_action('bulk_edit_custom_box', function($column_name, $post_type) {
+add_action('quick_edit_custom_box', function($column, $post_type) {
     if ($post_type !== 'bylaw_clause') return;
 
-    if ($column_name === 'bylaw_group' || $column_name === 'parent_clause') {
+    if (in_array($column, ['bylaw_group', 'parent_clause'], true)) {
         ?>
-        <fieldset class="inline-edit-col-left">
+        <fieldset class="inline-edit-col-right inline-custom-meta">
             <div class="inline-edit-col">
-                <?php if ($column_name === 'bylaw_group'): ?>
-                    <label class="alignleft">
-                        <span class="title">Bylaw Group</span>
-                        <select name="bcm_bylaw_group">
-                            <option value="">— No Change —</option>
-                            <option value="character">Character</option>
-                            <option value="council">Council</option>
-                            <option value="coordinator">Coordinator</option>
-                        </select>
-                    </label>
+
+                <?php if ($column === 'bylaw_group'):
+                    $field = get_field_object('field_bylaw_group');
+                    if ($field && !empty($field['choices'])): ?>
+                        <label>
+                            <span class="title">Bylaw Group</span>
+                            <select name="bcm_qe_bylaw_group" class="bcm-qe-bylaw-group">
+                                <option value="">— Select —</option>
+                                <?php foreach ($field['choices'] as $val => $label): ?>
+                                    <option value="<?= esc_attr($val) ?>"><?= esc_html($label) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </label>
+                    <?php endif; ?>
                 <?php endif; ?>
 
-                <?php if ($column_name === 'parent_clause'): 
+                <?php if ($column === 'parent_clause'):
                     $clauses = get_posts([
                         'post_type' => 'bylaw_clause',
                         'posts_per_page' => -1,
                         'orderby' => 'title',
                         'order' => 'ASC',
-                        'fields' => 'ids'
                     ]);
                     ?>
-                    <label class="alignleft">
+                    <label style="margin-top: 10px; display: block;">
                         <span class="title">Parent Clause</span>
-                        <select name="bcm_parent_clause">
-                            <option value="">— No Change —</option>
-                            <?php foreach ($clauses as $cid): ?>
-                                <?php
-                                    $sid = get_field('section_id', $cid);
-                                    $label = get_the_title($cid) . ($sid ? " [$sid]" : "");
+                        <select name="bcm_qe_parent_clause" class="bcm-qe-parent-clause bcm-select2" style="width: 100%;">
+                            <option value="">— Select —</option>
+                            <?php foreach ($clauses as $c):
+                                $sid = get_field('section_id', $c->ID);
+                                $content = strip_tags($c->post_content);
+                                $preview = mb_substr($content, 0, 25) . (mb_strlen($content) > 25 ? '…' : '');
+                                $label = trim(($sid ? "{$sid} " : '') . get_the_title($c->ID) . ' ' . $preview);
                                 ?>
-                                <option value="<?= esc_attr($cid) ?>"><?= esc_html($label) ?></option>
+                                <option value="<?= esc_attr($c->ID) ?>"><?= esc_html($label) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </label>
                 <?php endif; ?>
+
             </div>
         </fieldset>
         <?php
     }
 }, 10, 2);
 
-// JavaScript to inject selected values for each post in bulk
-add_action('admin_footer-edit.php', function() {
-    global $post_type;
-    if ($post_type !== 'bylaw_clause') return;
-    ?>
-    <script>
-        jQuery(function($) {
-            $('#bulk_edit').on('submit', function() {
-                const groupVal = $('select[name="bcm_bylaw_group"]').val();
-                const parentVal = $('select[name="bcm_parent_clause"]').val();
-
-                $('#bulk-edit input[name="post[]"]').each(function() {
-                    const id = $(this).val();
-                    if (groupVal) {
-                        $('<input>', {
-                            type: 'hidden',
-                            name: 'bulk_bcm_bylaw_group[' + id + ']',
-                            value: groupVal
-                        }).appendTo(this.form);
-                    }
-                    if (parentVal) {
-                        $('<input>', {
-                            type: 'hidden',
-                            name: 'bulk_bcm_parent_clause[' + id + ']',
-                            value: parentVal
-                        }).appendTo(this.form);
-                    }
-                });
-            });
-        });
-    </script>
-    <?php
-});
-
-// Save bulk-edit custom fields
 add_action('save_post_bylaw_clause', function($post_id) {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
 
-    // Bylaw Group
-    if (isset($_REQUEST['bulk_bcm_bylaw_group'][$post_id])) {
-        $value = sanitize_text_field($_REQUEST['bulk_bcm_bylaw_group'][$post_id]);
-        if (in_array($value, ['character', 'council', 'coordinator'], true)) {
-            update_field('field_bylaw_group', $value, $post_id);
+    // Save Bylaw Group using dynamic ACF choices
+    if (isset($_POST['bcm_qe_bylaw_group'])) {
+        $group = sanitize_text_field($_POST['bcm_qe_bylaw_group']);
+        $field = get_field_object('field_bylaw_group');
+        if ($field && isset($field['choices'][$group])) {
+            update_field('field_bylaw_group', $group, $post_id);
         }
     }
 
-    // Parent Clause
-    if (isset($_REQUEST['bulk_bcm_parent_clause'][$post_id])) {
-        $pid = (int) $_REQUEST['bulk_bcm_parent_clause'][$post_id];
+    // Save Parent Clause if valid
+    if (isset($_POST['bcm_qe_parent_clause'])) {
+        $pid = absint($_POST['bcm_qe_parent_clause']);
         if ($pid && get_post_type($pid) === 'bylaw_clause') {
             update_field('field_parent_clause', $pid, $post_id);
+        } elseif (!$pid) {
+            update_field('field_parent_clause', null, $post_id); // clear it if blank
         }
     }
 });
