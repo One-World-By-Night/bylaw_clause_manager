@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bylaw Clause Manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
- * Version: 1.0.23
+ * Version: 1.0.24
  * Author: OWBN (Greg H.)
  * Author URI: https://www.owbn.net
  * License: MIT
@@ -37,6 +37,7 @@ function bcm_register_bylaw_clause_cpt() {
         'has_archive' => false,
         'supports' => ['title', 'editor', 'revisions'],
         'show_in_rest' => true,
+        'menu_icon' => 'dashicons-book-alt',
     ]);
 }
 add_action('init', 'bcm_register_bylaw_clause_cpt');
