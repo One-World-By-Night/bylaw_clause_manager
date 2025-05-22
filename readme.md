@@ -4,97 +4,105 @@
 
 This plugin is purpose-built for domains where clauses need to be tracked individually, filtered by thematic relevance (e.g., "Anarch", "Caitiff"), and presented with full contextual hierarchy for readability and transparency.
 
-Note, this plugin relies on the free Advanced Custom Fields plugin, available through the Wordpress Plugins or directly at [www.advancedcustomfields.com](https://www.advancedcustomfields.com/)
+Note, this plugin relies on the free Advanced Custom Fields plugin, available through the WordPress Plugins directory or directly at www.advancedcustomfields.com
 
 ---
 
 # How It Works
 
-### 1. **Custom Post Type: `bylaw_clause`**
-Each bylaw clause is a WordPress post with fields:
+### 1. Custom Post Type: `bylaw_clause`
+Each bylaw clause is a WordPress post with structured ACF fields:
 - **Section ID** (`2.g.i.3`)
-- **Label** (e.g., *Caitiff*)
-- **Content** (rich text)
-- **Parent Clause** (to establish hierarchy)
-- **Sort Order**
+- **Post Title** (recommended: use a machine-readable version of the Section ID, e.g., `2_g_i_3`)
+- **Content** (rich text body of the clause)
+- **Parent Clause** (for nesting and hierarchy)
+- **Sort Order** (inferred from Section ID, used for display)
 - **Tags** (e.g., `anarch`, `caitiff`, `always`)
 - **Vote Date** (e.g., *March 10, 2024*)
 - **Vote Reference** (e.g., *1000001*)
-- **Bylaw Group** (e.g., `character`, `coordinator`, `council`) for filtering different sources
+- **Vote URL** (optional link to vote record or minutes)
+- **Bylaw Group** (e.g., `character`, `coordinator`, `council`) to segment clauses by context
 
 ---
 
-### 2. **Recursive Rendering**
+### 2. Recursive Rendering
 A shortcode `[render_bylaws group="character"]` renders clauses by group:
 - Automatically nests based on parent-child relationships.
-- Indents for visual structure.
-- Outputs metadata (`data-id`, `data-parent`) for JavaScript filtering.
-- Adds a tooltip (`title` attribute) if vote metadata is present.
-- Generates anchored links using section IDs (e.g., `#clause-2-g-i-3`).
+- Indents for visual clarity.
+- Outputs metadata (`data-id`, `data-parent`) for client-side filtering.
+- Adds a tooltip if vote metadata is present.
+- Anchors each clause using its Section ID (`#clause-2-g-i-3`).
 
 ---
 
-### 3. **Vote Metadata Display (Hover Tooltip)**
-- If either **vote date** or **vote reference** exists for a clause, the plugin adds a tooltip to the clause block.
-- Tooltip text includes:
-  - `Vote Date: <date>` (if set)
-  - `Reference: <reference>` (if set)
-- If **both fields are empty**, no tooltip is shown — avoiding unnecessary clutter or blank hovers.
-- Example tooltip:  
-  _Vote Date: March 10, 2024 | Reference: 1000001_
+### 3. Vote Metadata Display (Hover Tooltip)
+- A tooltip appears next to a clause if vote information is set.
+- Tooltip can include:
+  - **Vote Date**
+  - **Reference Number**
+  - A **“View Details”** link if a Vote URL is specified
+- Example tooltip:
+  `Vote Date: March 10, 2024 | Reference: 1000001 | View Details`
 
 ---
 
-### 4. **Tag-Based Filtering with Select2**
-A Select2-powered multi-select dropdown dynamically loads all tags used across clauses:
-- Allows users to filter by terms like `anarch`, `caitiff`, etc.
-- Includes a **“Clear Filters” button** to reset the dropdown and reveal all clauses.
-- Ensures that:
-  - **Matched clauses** are shown.
-  - **All ancestor clauses** are also shown for readability.
-  - **Clauses tagged `always`** are **always visible**, even when filters are active.
+### 4. Tag-Based Filtering with Select2
+Above the clause tree is a dynamic multi-select tag filter:
+- Uses Select2 for a searchable dropdown of all tags in use
+- Enables filtering by terms like `anarch`, `caitiff`, etc.
+- Includes a **“Clear Filters”** button
+- Ensures:
+  - Matched clauses are shown
+  - All ancestor clauses are shown to preserve context
+  - Clauses tagged `always` are always visible
 
 ---
 
-### 5. **Print / Export Support**
-- A **“Print / Export PDF” button** is included above the clause tree.
-- When clicked, it prints only the currently visible clauses (honoring active filters).
-- Useful for exporting filtered views of specific sections like “Caitiff-only” rules or a Coordinator-specific handbook.
+### 5. Print / Export Support
+- A **“Print / Export PDF”** button is available above the clause display
+- Only visible clauses are printed/exported, matching any filters
+- Great for printing thematic handbooks or filtered legal summaries
 
 ---
 
-### 6. **Enhanced Admin Experience**
-The WordPress admin interface for `Bylaw Clauses` includes:
-- **Custom columns**: `Bylaw Group`, `Parent Clause`, and sortable `Date`
-- **Sortable columns**: Bylaw Group and Parent Clause
-- **Admin filtering dropdown**: Filter clauses by `Bylaw Group` in the dashboard
-- **Improved display**: Parent dropdowns show both the title and section ID
+### 6. Enhanced Admin Experience
+The admin dashboard for `Bylaw Clauses` includes:
+- **Custom Columns**: Bylaw Group, Parent Clause
+- **Sorting**: Bylaw Group and Parent Clause columns are sortable
+- **Admin Filters**: Filter by Bylaw Group directly in the list view
+- **Parent Clause Selection**:
+  - Uses Select2-enhanced dropdowns
+  - Displays both title and a content preview
+  - Filtered by group to avoid cross-context nesting
+- **Quick Edit**:
+  - Inline editing of Bylaw Group and Parent Clause
+  - Parent dropdown shows section title and short content preview
+  - Respects dynamic field options from ACF
 
 ---
 
 # Real Example: OWbN Character Bylaws
 
-From [https://www.owbn.net/bylaws/character](https://www.owbn.net/bylaws/character), we can model this clause structure:
-
-```
-2. Character Creation  
-  g. Vampire Characters must have a clearly defined Sect...  
-    i. Anarch (Anarch Coordinator Controlled)  
-      3. Caitiff  
-```
+From https://www.owbn.net/bylaws/character, we can model this clause structure:
+2.	Character Creation
+  g. Vampire Characters must have a clearly defined Sect…
+    i. Anarch (Anarch Coordinator Controlled)
+      3. Caitiff
 
 ### In the Plugin:
 
-| Section ID | Label                                         | Tags               | Parent      |
-|------------|-----------------------------------------------|--------------------|-------------|
-| `2`        | Character Creation                            | `always`           | *none*      |
-| `2.g`      | Vampire Characters must have a clearly...     |                    | `2`         |
-| `2.g.i`    | Anarch (Anarch Coordinator Controlled)        | `anarch`           | `2.g`       |
-| `2.g.i.3`  | Caitiff                                       | `anarch,caitiff`   | `2.g.i`     |
+| Section ID | Post Title | Content Preview                          | Tags             | Parent    |
+|------------|------------|------------------------------------------|------------------|-----------|
+| `2`        | `2`        | Character Creation                       | always           | *none*    |
+| `2.g`      | `2_g`      | Vampire Characters must have...          |                  | `2`       |
+| `2.g.i`    | `2_g_i`    | Anarch (Anarch Coordinator Controlled)   | anarch           | `2.g`     |
+| `3`        | `2_g_i_3`  | Caitiff                                  | anarch,caitiff   | `2.g.i`   |
+
+**Recommended**: Set the WordPress post title to match the machine-readable version of the Section ID, e.g., `2_g_i_3`, for internal consistency and debugging ease.
 
 ### Filtering Behavior:
-- If the user selects **“Caitiff”**, the output will show:
-  - `2` → `2.g` → `2.g.i` → `2.g.i.3`
-- Even though only the final item is tagged `caitiff`, its ancestors are shown.
-- Any item tagged `always` (like `2`) is shown regardless of filter.
-- Clicking “Clear Filters” returns all clauses to view.
+- Selecting the **Caitiff** tag reveals:
+  - `2` → `2.g` → `2.g.i` → `3`
+- All ancestor clauses are shown, even if they aren’t tagged
+- Any clause tagged `always` is visible regardless of filters
+- “Clear Filters” returns the full hierarchy to view
