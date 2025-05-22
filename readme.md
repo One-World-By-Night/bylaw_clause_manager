@@ -1,4 +1,4 @@
-=== Bylaw Clause Manager ===
+# Bylaw Clause Manager
 Contributors: owbnwebcoord
 Tags: bylaws, nested content, legal clauses, acf, custom post types
 Requires at least: 6.0
@@ -10,7 +10,7 @@ Requires PHP: 7.4
 
 Manage and display nested bylaws or hierarchical clauses with ACF support, filtering, tooltips, and Select2-enhanced editing.
 
-== Description ==
+## Description
 **Bylaw Clause Manager** is a custom WordPress plugin that allows organizations like OWbN to manage a complex, hierarchical set of bylaws in a structured, modular, and trackable way. Each clause is independently editable, tagged for filtering, version-controlled, and rendered in a readable nested format — just like a legal document, but with modern digital accessibility.
 
 This plugin is purpose-built for domains where clauses need to be tracked individually, filtered by thematic relevance (e.g., "Anarch", "Caitiff"), and presented with full contextual hierarchy for readability and transparency.
