@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Bylaw Clause Manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
- * Version: 1.0.24
+ * Version: 1.0.25
  * Author: OWBN (Greg H.)
  * Author URI: https://www.owbn.net
  * License: MIT
@@ -75,11 +75,6 @@ function bcm_fix_clause_parents() {
 
     echo "<div class='notice notice-success'><p>✅ $updated parent clauses updated.</p></div>";
 }
-
-add_filter('acf/fields/post_object/result/name=parent_clause', function($title, $post, $field, $post_id) {
-    $section_id = get_field('section_id', $post->ID);
-    return $title . ' [' . $section_id . ']';
-}, 10, 4);
 
 add_filter('manage_bylaw_clause_posts_columns', function($columns) {
     $new = [];
@@ -353,10 +348,12 @@ add_filter('acf/fields/post_object/query/name=parent_clause', function($args, $f
 }, 10, 3);
 
 add_filter('acf/fields/post_object/result/name=parent_clause', function($title, $post, $field, $post_id) {
-    $section_id = get_field('section_id', $post->ID);
     $preview = mb_substr(strip_tags($post->post_content), 0, 25);
-    $preview .= (mb_strlen($post->post_content) > 25 ? '…' : '');
-    return trim(($section_id ? "{$section_id} " : '') . $post->post_title . ' ' . $preview);
+    if (mb_strlen($post->post_content) > 25) {
+        $preview .= '…';
+    }
+
+    return trim($title . ' ' . $preview);
 }, 10, 4);
 
 function bcm_enqueue_assets() {
