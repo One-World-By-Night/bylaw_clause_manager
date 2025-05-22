@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Bylaw Clause Manager
- * Text Domain: bylaw_clause_manager
+ * Text Domain: bylaw-clause-manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
  * Version: 1.0.25
  * Author: greghacke
