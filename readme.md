@@ -1,12 +1,12 @@
 # Bylaw Clause Manager
-Contributors: owbnwebcoord
+Contributors: owbnwebcoord, greghacke
 Tags: bylaws, nested content, legal clauses, acf, custom post types
 Requires at least: 6.0
 Tested up to: 6.8
 Stable tag: 1.0.25
 Requires PHP: 7.4
- License: GPL-2.0-or-later
- License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: GPL-2.0-or-later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Manage and display nested bylaws or hierarchical clauses with ACF support, filtering, tooltips, and Select2-enhanced editing.
 
@@ -18,9 +18,10 @@ This plugin is purpose-built for domains where clauses need to be tracked indivi
 Note, this plugin relies on the free Advanced Custom Fields plugin, available through the WordPress Plugins directory or directly at www.advancedcustomfields.com
 
 Licensed under GNU/GPL v2.0
+
 ---
 
-# How It Works
+## How It Works
 
 ### 1. Custom Post Type: `bylaw_clause`
 Each bylaw clause is a WordPress post with structured ACF fields:
@@ -93,22 +94,22 @@ The admin dashboard for `Bylaw Clauses` includes:
 
 ---
 
-# Real Example: OWbN Character Bylaws
+## Real Example: OWbN Character Bylaws
 
 From https://www.owbn.net/bylaws/character, we can model this clause structure:
-2.	Character Creation
+2. Character Creation
   g. Vampire Characters must have a clearly defined Sect…
     i. Anarch (Anarch Coordinator Controlled)
       3. Caitiff
 
 ### In the Plugin:
 
-| Section ID | Post Title | Content Preview                          | Tags             | Parent    |
-|------------|------------|------------------------------------------|------------------|-----------|
-| `2`        | `2`        | Character Creation                       | always           | *none*    |
-| `g`        | `2_g`      | Vampire Characters must have...          |                  | `2`       |
-| `i`        | `2_g_i`    | Anarch (Anarch Coordinator Controlled)   | anarch           | `2.g`     |
-| `3`        | `2_g_i_3`  | Caitiff                                  | anarch,caitiff   | `2.g.i`   |
+| Section ID | Post Title | Content Preview                        | Tags           | Parent    |
+|------------|------------|----------------------------------------|----------------|-----------|
+| `2`        | `2`        | Character Creation                     | always         | *none*    |
+| `g`        | `2_g`      | Vampire Characters must have...        |                | `2`       |
+| `i`        | `2_g_i`    | Anarch (Anarch Coordinator Controlled) | anarch         | `2.g`     |
+| `3`        | `2_g_i_3`  | Caitiff                                | anarch,caitiff | `2.g.i`   |
 
 **Recommended**: Set the WordPress post title to match the machine-readable version of the Section ID, e.g., `2_g_i_3`, for internal consistency and debugging ease.
 
