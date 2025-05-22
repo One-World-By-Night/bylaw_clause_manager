@@ -6,6 +6,7 @@ This plugin is purpose-built for domains where clauses need to be tracked indivi
 
 Note, this plugin relies on the free Advanced Custom Fields plugin, available through the WordPress Plugins directory or directly at www.advancedcustomfields.com
 
+Licensed under GNU/GPL v2.0
 ---
 
 # How It Works
@@ -94,8 +95,8 @@ From https://www.owbn.net/bylaws/character, we can model this clause structure:
 | Section ID | Post Title | Content Preview                          | Tags             | Parent    |
 |------------|------------|------------------------------------------|------------------|-----------|
 | `2`        | `2`        | Character Creation                       | always           | *none*    |
-| `2.g`      | `2_g`      | Vampire Characters must have...          |                  | `2`       |
-| `2.g.i`    | `2_g_i`    | Anarch (Anarch Coordinator Controlled)   | anarch           | `2.g`     |
+| `g`        | `2_g`      | Vampire Characters must have...          |                  | `2`       |
+| `i`        | `2_g_i`    | Anarch (Anarch Coordinator Controlled)   | anarch           | `2.g`     |
 | `3`        | `2_g_i_3`  | Caitiff                                  | anarch,caitiff   | `2.g.i`   |
 
 **Recommended**: Set the WordPress post title to match the machine-readable version of the Section ID, e.g., `2_g_i_3`, for internal consistency and debugging ease.

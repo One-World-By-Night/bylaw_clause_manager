@@ -5,8 +5,8 @@
  * Version: 1.0.25
  * Author: OWBN (Greg H.)
  * Author URI: https://www.owbn.net
- * License: MIT
- * License URI: https://opensource.org/licenses/MIT
+ * License: GNU General Public License v2.0 (GPL-2.0)
+ * License URI: http://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: bylaw-clause-manager
  * Domain Path: /languages
  * GitHub Plugin URI: https://github.com/One-World-By-Night/bylaw_clause_manager
