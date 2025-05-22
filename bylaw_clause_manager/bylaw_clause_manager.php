@@ -1,13 +1,14 @@
 <?php
 /**
  * Plugin Name: Bylaw Clause Manager
+ * Text Domain: bylaw_clause_manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
  * Version: 1.0.25
- * Author: OWBN (Greg H.)
+ * Author: greghacke
  * Author URI: https://www.owbn.net
- * License: GNU General Public License v2.0 (GPL-2.0)
+ * License: GPL-2.0-or-later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: bylaw-clause-manager
+ * Text Domain: bylaw_clause_manager
  * Domain Path: /languages
  * GitHub Plugin URI: https://github.com/One-World-By-Night/bylaw_clause_manager
  * GitHub Branch: main
@@ -73,7 +74,7 @@ function bcm_fix_clause_parents() {
         }
     }
 
-    echo "<div class='notice notice-success'><p>✅ $updated parent clauses updated.</p></div>";
+    echo '<div class="notice notice-success"><p>' . esc_html("✅ $updated parent clauses updated.") . '</p></div>';
 }
 
 add_filter('manage_bylaw_clause_posts_columns', function($columns) {
@@ -104,41 +105,53 @@ add_filter('manage_edit-bylaw_clause_sortable_columns', function($columns) {
     return $columns;
 });
 
-add_action('pre_get_posts', function($query) {
-    if (!is_admin() || !$query->is_main_query()) return;
+// Sanitize filter values before the hook runs
+$nonce_raw   = filter_input(INPUT_GET, 'bcm_filter_nonce_field', FILTER_UNSAFE_RAW);
+$group_raw   = filter_input(INPUT_GET, 'bylaw_group', FILTER_UNSAFE_RAW);
+$title_raw   = filter_input(INPUT_GET, 'bcm_title_filter', FILTER_UNSAFE_RAW);
+
+$nonce       = is_string($nonce_raw) ? sanitize_text_field(wp_unslash($nonce_raw)) : '';
+$group       = is_string($group_raw) ? sanitize_text_field(wp_unslash($group_raw)) : '';
+$title       = is_string($title_raw) ? sanitize_text_field(wp_unslash($title_raw)) : '';
+
+add_action('pre_get_posts', function($query) use ($nonce, $group, $title) {
+    if (!is_admin() || !$query->is_main_query()) {
+        return;
+    }
 
     $orderby = $query->get('orderby');
 
-    // Handle sortable columns
     if ($orderby === 'bylaw_group') {
         $query->set('meta_key', 'bylaw_group');
         $query->set('orderby', 'meta_value');
     }
+
     if ($orderby === 'parent_clause') {
         $query->set('meta_key', 'parent_clause');
         $query->set('orderby', 'meta_value');
     }
 
-    if ($query->get('post_type') === 'bylaw_clause') {
-        // Filter by Bylaw Group
-        if (!empty($_GET['bylaw_group'])) {
+    if (
+        $query->get('post_type') === 'bylaw_clause' &&
+        !empty($nonce) &&
+        wp_verify_nonce($nonce, 'bcm_filter_nonce')
+    ) {
+        if (!empty($group)) {
             $query->set('meta_query', [[
                 'key' => 'bylaw_group',
-                'value' => sanitize_text_field($_GET['bylaw_group']),
+                'value' => $group,
                 'compare' => '='
             ]]);
         }
 
-        // Filter by Title (map bcm_title_filter into s)
-        if (!empty($_GET['bcm_title_filter'])) {
-            $query->set('s', sanitize_text_field($_GET['bcm_title_filter']));
+        if (!empty($title)) {
+            $query->set('s', $title);
         }
+    }
 
-        // Default sort by title
-        if (!$orderby) {
-            $query->set('orderby', 'title');
-            $query->set('order', 'ASC');
-        }
+    if (!$orderby) {
+        $query->set('orderby', 'title');
+        $query->set('order', 'ASC');
     }
 });
 
@@ -156,30 +169,49 @@ add_filter('posts_search', function($search, $wp_query) {
 
 add_action('restrict_manage_posts', function() {
     global $typenow;
-    if ($typenow !== 'bylaw_clause') return;
 
-    // Bylaw Group Filter
-    $selected = $_GET['bylaw_group'] ?? '';
+    // Apply only to 'bylaw_clause' post type
+    if ($typenow !== 'bylaw_clause') {
+        return;
+    }
+
+    // Output nonce field for filter validation
+    wp_nonce_field('bcm_filter_nonce', 'bcm_filter_nonce_field');
+
+    // Sanitize selected group from GET
+    $selected_raw = $_GET['bylaw_group'] ?? '';
+    $selected_group = sanitize_text_field(wp_unslash($selected_raw));
+
+    // Define group options
     $options = [
         '' => 'All Bylaw Groups',
         'character' => 'Character',
         'council' => 'Council',
         'coordinator' => 'Coordinator'
     ];
+
+    // Render select dropdown
     echo '<select name="bylaw_group">';
-    foreach ($options as $val => $label) {
+    foreach ($options as $value => $label) {
         printf(
             '<option value="%s"%s>%s</option>',
-            esc_attr($val),
-            selected($selected, $val, false),
+            esc_attr($value),
+            selected($selected_group, $value, false),
             esc_html($label)
         );
     }
     echo '</select>';
 
-    // Title Filter
-    $title_filter = $_GET['bcm_title_filter'] ?? '';
-    echo '<input type="text" name="bcm_title_filter" placeholder="Filter Title" value="' . esc_attr($title_filter) . '" style="margin-left: 10px;" />';
+    // Sanitize title filter input
+    $raw_title_filter = $_GET['bcm_title_filter'] ?? '';
+    $title_filter = sanitize_text_field(wp_unslash($raw_title_filter));
+
+    // Render title input
+    printf(
+        '<input type="text" name="bcm_title_filter" placeholder="%s" value="%s" style="margin-left: 10px;" />',
+        esc_attr__('Filter Title', 'bylaw_clause_manager'),
+        esc_attr($title_filter)
+    );
 });
 
 function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
@@ -235,13 +267,13 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
 
         // Render block
         $anchor_id = sanitize_title($section);
-        echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ?: 0) . '" style="margin-left:' . (20 * $depth) . 'px;">';
+        $margin = 20 * (int) $depth;
+        echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ?: 0) . '" style="margin-left:' . esc_attr($margin) . 'px;">';
 
         echo "<div class=\"bylaw-label-wrap\">\n";
         echo "  <span class=\"bylaw-label-number\">" . esc_html($section) . ".</span>\n";
-        echo "  <div class=\"bylaw-label-text\">\n";
-        echo      apply_filters('the_content', $content) . "\n";
-        echo "    " . $vote_marker . "\n";
+        echo '<div class="bylaw-label-text">' . wp_kses_post(apply_filters('the_content', $content)) . '</div>' . "\n";
+        echo '    ' . wp_kses_post($vote_marker) . "\n";
         echo "  </div>\n";
         echo "</div>\n";
 
@@ -302,13 +334,15 @@ function bcm_sequence_to_int($seq) {
 
 add_shortcode('render_bylaws', function($atts) {
     $atts = shortcode_atts([ 'group' => null ], $atts);
+    ob_start();
+    echo '<div class="bcm-wrapper">';
     echo '<div id="bcm-toolbar">
             <label for="bcm-tag-select">Filter by Tag:</label>
             <select id="bcm-tag-select" multiple style="width: 300px;"></select>
             <button onclick="window.print()">Print / Export PDF</button>
           </div>';
-    ob_start();
     bcm_render_bylaw_tree(0, 0, $atts['group']);
+    echo '</div>';
     return ob_get_clean();
 });
 
@@ -348,7 +382,7 @@ add_filter('acf/fields/post_object/query/name=parent_clause', function($args, $f
 }, 10, 3);
 
 add_filter('acf/fields/post_object/result/name=parent_clause', function($title, $post, $field, $post_id) {
-    $preview = mb_substr(strip_tags($post->post_content), 0, 25);
+    $preview = mb_substr(wp_strip_all_tags($post->post_content), 0, 25);
     if (mb_strlen($post->post_content) > 25) {
         $preview .= '…';
     }
@@ -358,171 +392,231 @@ add_filter('acf/fields/post_object/result/name=parent_clause', function($title, 
 
 function bcm_enqueue_assets() {
     $plugin_url = plugins_url('', __FILE__);
-    wp_enqueue_style('select2-style', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css');
-    wp_enqueue_script('select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', ['jquery'], null, true);
-    wp_enqueue_script('bcm-filter', $plugin_url . '/js/filter.js', ['jquery', 'select2'], false, true);
+
+    // Load local Select2 assets
+    wp_enqueue_style(
+        'select2-style',
+        plugins_url('css/select2.min.css', __FILE__),
+        [],
+        '4.1.0'
+    );
+
+    wp_enqueue_script(
+        'select2',
+        plugins_url('js/select2.min.js', __FILE__),
+        ['jquery'],
+        '4.1.0',
+        true
+    );
+
+    // Load your custom filter script
+    wp_enqueue_script(
+        'bcm-filter',
+        $plugin_url . '/js/filter.js',
+        ['jquery', 'select2'],
+        filemtime(plugin_dir_path(__FILE__) . 'js/filter.js'),
+        true
+    );
 }
 
 add_action('admin_enqueue_scripts', function($hook) {
     if ($hook !== 'edit.php') return;
 
-    wp_enqueue_style('select2-admin-style', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css');
-    wp_enqueue_script('select2-admin-script', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', ['jquery'], null, true);
+    // Enqueue local Select2 CSS and JS
+    wp_enqueue_style(
+        'select2-admin-style',
+        plugins_url('css/select2.min.css', __FILE__),
+        [],
+        '4.1.0'
+    );
 
-    wp_add_inline_script('select2-admin-script', <<<JS
-    jQuery(function($) {
-        function initSelect2QuickEdit() {
-            $('.bcm-select2').each(function() {
-                if (\$.fn.select2) {
-                    // Destroy if already initialized
-                    if ($(this).hasClass('select2-hidden-accessible')) {
-                        $(this).select2('destroy');
+    wp_enqueue_script(
+        'select2-admin-script',
+        plugins_url('js/select2.min.js', __FILE__),
+        ['jquery'],
+        '4.1.0',
+        true
+    );
+
+    // Inline script to init Select2 on quick edit dropdowns
+    wp_add_inline_script('select2-admin-script', '
+        jQuery(function($) {
+            function initSelect2QuickEdit() {
+                $(".bcm-select2").each(function() {
+                    if ($.fn.select2) {
+                        if ($(this).hasClass("select2-hidden-accessible")) {
+                            $(this).select2("destroy");
+                        }
+                        $(this).select2({ width: "100%" });
                     }
-                    // Re-initialize
-                    $(this).select2({ width: '100%' });
+                });
+            }
+
+            $(document).on("click", ".editinline", function() {
+                setTimeout(initSelect2QuickEdit, 100);
+            });
+
+            $(document).ajaxSuccess(function(e, xhr, settings) {
+                if (settings.data && settings.data.includes("action=inline-save")) {
+                    setTimeout(initSelect2QuickEdit, 200);
                 }
             });
-        }
-
-        // Run after Quick Edit is opened
-        $(document).on('click', '.editinline', function() {
-            setTimeout(initSelect2QuickEdit, 100);
         });
-
-        // Also catch after inline save, which might refresh the row
-        $(document).ajaxSuccess(function(e, xhr, settings) {
-            if (settings.data && settings.data.includes('action=inline-save')) {
-                setTimeout(initSelect2QuickEdit, 200);
-            }
-        });
-    });
-    JS);
+    ');
 });
 
 function bcm_output_inline_assets() {
-    ?>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-    <style>
-        #bcm-toolbar {
-            margin-bottom: 1em;
-        }
+    $plugin_url = plugins_url('', __FILE__);
 
-        #bcm-toolbar button {
-            padding: 4px 10px;
-            font-size: 0.9em;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            background-color: #f5f5f5;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            line-height: 1.2;
-        }
+    // Register and enqueue local Select2 CSS
+    wp_register_style(
+        'select2',
+        $plugin_url . '/css/select2.min.css',
+        [],
+        '4.1.0'
+    );
+    wp_enqueue_style('select2');
 
-        #bcm-toolbar button:hover {
-            background-color: #e6e6e6;
-            border-color: #999;
-        }
+    // Register and enqueue local Select2 JS
+    wp_register_script(
+        'select2',
+        $plugin_url . '/js/select2.min.js',
+        ['jquery'],
+        '4.1.0',
+        true
+    );
+    wp_enqueue_script('select2');
 
-        #bcm-toolbar label {
-            margin-right: 0.5em;
-            font-size: 0.95em;
-            font-weight: 500;
-        }
-
-        #bcm-toolbar {
-            display: flex;
-            align-items: center;
-            gap: 0.75em;
-            flex-wrap: wrap;
-        }
-
-        .bylaw-clause {
-            margin-bottom: 0.25em;
-        }
-
-        .bylaw-clause strong {
-            display: block;
-            font-size: 1.1em;
-            margin-bottom: 0.1em;
-        }
-
-        .bylaw-content {
-            margin-left: 1em;
-            font-size: 0.95em;
-            line-height: 1.1;
-        }
-
-        .bylaw-label-wrap {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.3em;
-            flex-wrap: wrap;
-            line-height: 1.1;
-        }
-
-        .bylaw-label-number {
-            font-weight: normal;
-            white-space: nowrap;
-            font-size: 1em;
-        }
-
-        .bylaw-label-text {
-            word-break: break-word;
-            flex: 1;
-            min-width: 0;
-            line-height: 1.1;
-            font-size: 0.95em;
-        }
-
-        .bylaw-content p {
-            margin: 0.25em 0;
-        }
-
-        .vote-tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: help;
-            font-size: 0.85em;
-            color: #555;
-            margin-left: 4px;
-        }
-
-        .vote-tooltip .tooltip-content {
-            display: none;
-            position: absolute;
-            top: 120%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
-            color: #fff;
-            padding: 6px 8px;
-            border-radius: 4px;
-            font-size: 0.75em;
-            z-index: 9999;
-            min-width: 160px;
-            max-width: 280px;
-            text-align: left;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-            white-space: normal;
-        }
-
-        .vote-tooltip:hover .tooltip-content {
-            display: block;
-        }
-
-        .tooltip-content a {
-            color: #9cf;
-            text-decoration: underline;
-        }
-
-        .tooltip-content a:hover {
-            color: #cde;
-        }
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <?php
+    // Add inline custom styles (plugin-specific)
+    wp_add_inline_style('select2', bcm_get_inline_styles());
 }
-add_action('wp_head', 'bcm_output_inline_assets', 100);
+
+function bcm_get_inline_styles() {
+    $css  = "#bcm-toolbar {\n";
+    $css .= "  margin-bottom: 1em;\n";
+    $css .= "  display: flex;\n";
+    $css .= "  align-items: center;\n";
+    $css .= "  gap: 0.75em;\n";
+    $css .= "  flex-wrap: wrap;\n";
+    $css .= "}\n";
+
+    $css .= "#bcm-toolbar button {\n";
+    $css .= "  padding: 4px 10px;\n";
+    $css .= "  font-size: 0.9em;\n";
+    $css .= "  border-radius: 4px;\n";
+    $css .= "  border: 1px solid #ccc;\n";
+    $css .= "  background-color: #f5f5f5;\n";
+    $css .= "  cursor: pointer;\n";
+    $css .= "  transition: all 0.2s ease-in-out;\n";
+    $css .= "  line-height: 1.2;\n";
+    $css .= "}\n";
+
+    $css .= "#bcm-toolbar button:hover {\n";
+    $css .= "  background-color: #e6e6e6;\n";
+    $css .= "  border-color: #999;\n";
+    $css .= "}\n";
+
+    $css .= "#bcm-toolbar label {\n";
+    $css .= "  margin-right: 0.5em;\n";
+    $css .= "  font-size: 0.95em;\n";
+    $css .= "  font-weight: 500;\n";
+    $css .= "}\n";
+
+    // CLAUSE CONTAINERS
+    $css .= ".bylaw-clause {\n";
+    $css .= "  display: block;\n";
+    $css .= "  width: 100%;\n";
+    $css .= "  clear: both;\n";
+    $css .= "  margin-bottom: 0.25em;\n";
+    $css .= "}\n";
+
+    $css .= ".bylaw-clause strong {\n";
+    $css .= "  display: block;\n";
+    $css .= "  font-size: 1.1em;\n";
+    $css .= "  margin-bottom: 0.1em;\n";
+    $css .= "}\n";
+
+    $css .= ".bylaw-content {\n";
+    $css .= "  margin-left: 1em;\n";
+    $css .= "  font-size: 0.95em;\n";
+    $css .= "  line-height: 1.1;\n";
+    $css .= "}\n";
+
+    // LABELS
+    $css .= ".bylaw-label-wrap {\n";
+    $css .= "  display: flex;\n"; 
+    $css .= "  align-items: flex-start;\n";
+    $css .= "  gap: 1em;\n";
+    $css .= "  margin-bottom: 0.25em;\n";
+    $css .= "  line-height: 1.1;\n";
+    $css .= "  flex-wrap: wrap;\n";
+    $css .= "}\n";
+
+    $css .= ".bylaw-label-number {\n";
+    $css .= "  font-weight: normal;\n";
+    $css .= "  white-space: nowrap;\n";
+    $css .= "  font-size: 1em;\n";
+    $css .= "  flex-shrink: 0;\n";
+    $css .= "}\n";
+
+    $css .= ".bylaw-label-text {\n";
+    $css .= "  word-break: break-word;\n";
+    $css .= "  line-height: 1.1;\n";
+    $css .= "  font-size: 0.95em;\n";
+    $css .= "  flex: 1;\n";
+    $css .= "  min-width: 0;\n";
+    $css .= "}\n";
+
+    $css .= ".bylaw-content p {\n";
+    $css .= "  margin: 0.25em 0;\n";
+    $css .= "}\n";
+
+    // TOOLTIP
+    $css .= ".vote-tooltip {\n";
+    $css .= "  position: relative;\n";
+    $css .= "  display: inline-block;\n";
+    $css .= "  cursor: help;\n";
+    $css .= "  font-size: 0.85em;\n";
+    $css .= "  color: #555;\n";
+    $css .= "  margin-left: 4px;\n";
+    $css .= "}\n";
+
+    $css .= ".vote-tooltip .tooltip-content {\n";
+    $css .= "  display: none;\n";
+    $css .= "  position: absolute;\n";
+    $css .= "  top: 120%;\n";
+    $css .= "  left: 50%;\n";
+    $css .= "  transform: translateX(-50%);\n";
+    $css .= "  background-color: #333;\n";
+    $css .= "  color: #fff;\n";
+    $css .= "  padding: 6px 8px;\n";
+    $css .= "  border-radius: 4px;\n";
+    $css .= "  font-size: 0.75em;\n";
+    $css .= "  z-index: 9999;\n";
+    $css .= "  min-width: 160px;\n";
+    $css .= "  max-width: 280px;\n";
+    $css .= "  text-align: left;\n";
+    $css .= "  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);\n";
+    $css .= "  white-space: normal;\n";
+    $css .= "}\n";
+
+    $css .= ".vote-tooltip:hover .tooltip-content {\n";
+    $css .= "  display: block;\n";
+    $css .= "}\n";
+
+    $css .= ".tooltip-content a {\n";
+    $css .= "  color: #9cf;\n";
+    $css .= "  text-decoration: underline;\n";
+    $css .= "}\n";
+
+    $css .= ".tooltip-content a:hover {\n";
+    $css .= "  color: #cde;\n";
+    $css .= "}\n";
+
+    return $css;
+}
+
+add_action('wp_enqueue_scripts', 'bcm_output_inline_assets', 100);
 
 function bcm_enqueue_print_styles() {
     // Adjust the path as needed
@@ -541,15 +635,19 @@ add_action('quick_edit_custom_box', function($column, $post_type) {
         <fieldset class="inline-edit-col-right inline-custom-meta">
             <div class="inline-edit-col">
 
-                <?php if ($column === 'bylaw_group'):
+                <?php
+                // Add nonce once inside the fieldset for security
+                wp_nonce_field('bcm_qe_save', 'bcm_qe_nonce');
+
+                if ($column === 'bylaw_group'):
                     $field = get_field_object('field_bylaw_group');
                     if ($field && !empty($field['choices'])): ?>
                         <label>
-                            <span class="title">Bylaw Group</span>
+                            <span class="title"><?php esc_html_e('Bylaw Group', 'bylaw_clause_manager'); ?></span>
                             <select name="bcm_qe_bylaw_group" class="bcm-qe-bylaw-group">
-                                <option value="">— Select —</option>
+                                <option value=""><?php esc_html_e('— Select —', 'bylaw_clause_manager'); ?></option>
                                 <?php foreach ($field['choices'] as $val => $label): ?>
-                                    <option value="<?= esc_attr($val) ?>"><?= esc_html($label) ?></option>
+                                    <option value="<?php echo esc_attr($val); ?>"><?php echo esc_html($label); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </label>
@@ -562,19 +660,24 @@ add_action('quick_edit_custom_box', function($column, $post_type) {
                         'posts_per_page' => -1,
                         'orderby' => 'title',
                         'order' => 'ASC',
+                        'post_status' => ['publish', 'draft', 'pending', 'private'],
                     ]);
                     ?>
                     <label style="margin-top: 10px; display: block;">
-                        <span class="title">Parent Clause</span>
+                        <span class="title"><?php esc_html_e('Parent Clause', 'bylaw_clause_manager'); ?></span>
                         <select name="bcm_qe_parent_clause" class="bcm-qe-parent-clause bcm-select2" style="width: 100%;">
-                            <option value="">— Select —</option>
+                            <option value=""><?php esc_html_e('— Select —', 'bylaw_clause_manager'); ?></option>
                             <?php foreach ($clauses as $c):
                                 $sid = get_field('section_id', $c->ID);
-                                $content = strip_tags($c->post_content);
-                                $preview = mb_substr($content, 0, 25) . (mb_strlen($content) > 25 ? '…' : '');
-                                $label = trim(($sid ? "{$sid} " : '') . get_the_title($c->ID) . ' ' . $preview);
+                                $title = get_the_title($c->ID);
+                                $content = wp_strip_all_tags($c->post_content);
+                                $preview = mb_substr($content, 0, 25);
+                                if (mb_strlen($content) > 25) {
+                                    $preview .= '…';
+                                }
+                                $label = trim(($sid ? "{$sid} " : '') . $title . ' ' . $preview);
                                 ?>
-                                <option value="<?= esc_attr($c->ID) ?>"><?= esc_html($label) ?></option>
+                                <option value="<?php echo esc_attr($c->ID); ?>"><?php echo esc_html($label); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </label>
@@ -587,11 +690,31 @@ add_action('quick_edit_custom_box', function($column, $post_type) {
 }, 10, 2);
 
 add_action('save_post_bylaw_clause', function($post_id) {
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+    // Bail on autosave or if not a valid post type
+    if (
+        defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ||
+        get_post_type($post_id) !== 'bylaw_clause'
+    ) {
+        return;
+    }
+
+    // Bail if this is not from our quick edit UI
+    if (
+        !isset($_POST['bcm_qe_nonce']) ||
+        !wp_verify_nonce(wp_unslash($_POST['bcm_qe_nonce']), 'bcm_qe_save')
+    ) {
+        return;
+    }
+
+    // Capability check
+    if (!current_user_can('edit_post', $post_id)) {
+        return;
+    }
 
     // Save Bylaw Group using dynamic ACF choices
     if (isset($_POST['bcm_qe_bylaw_group'])) {
-        $group = sanitize_text_field($_POST['bcm_qe_bylaw_group']);
+        $group_raw = wp_unslash($_POST['bcm_qe_bylaw_group']);
+        $group = sanitize_text_field($group_raw);
         $field = get_field_object('field_bylaw_group');
         if ($field && isset($field['choices'][$group])) {
             update_field('field_bylaw_group', $group, $post_id);
@@ -600,11 +723,12 @@ add_action('save_post_bylaw_clause', function($post_id) {
 
     // Save Parent Clause if valid
     if (isset($_POST['bcm_qe_parent_clause'])) {
-        $pid = absint($_POST['bcm_qe_parent_clause']);
+        $pid_raw = wp_unslash($_POST['bcm_qe_parent_clause']);
+        $pid = absint($pid_raw);
         if ($pid && get_post_type($pid) === 'bylaw_clause') {
             update_field('field_parent_clause', $pid, $post_id);
-        } elseif (!$pid) {
-            update_field('field_parent_clause', null, $post_id); // clear it if blank
+        } else {
+            update_field('field_parent_clause', null, $post_id);
         }
     }
 });
