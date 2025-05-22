@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const clauses = document.querySelectorAll('.bylaw-clause');
   const tagSet = new Set();
 
-  // Extract all tags from class names
+  // Extract tags from class names
   clauses.forEach(clause => {
     clause.classList.forEach(cls => {
       if (cls !== 'bylaw-clause') tagSet.add(cls);
@@ -18,20 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
     select.appendChild(option);
   });
 
-  // Add Clear button
-  const clearBtn = document.createElement('button');
-  clearBtn.textContent = 'Clear Filters';
-  clearBtn.type = 'button';
-  clearBtn.style.marginLeft = '10px';
-  select.parentElement.appendChild(clearBtn);
-
   // Initialize Select2
   jQuery(select).select2({
     placeholder: 'Filter by tag',
     width: 'resolve'
   });
 
-  // Core filter function
+  // Core filter logic
   function applyFilter(selected) {
     const showIds = new Set();
     const clausesById = {};
@@ -62,14 +55,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Event handlers
+  // Change handler for tag selection
   jQuery(select).on('change', () => {
     const selected = jQuery(select).val() || [];
     applyFilter(selected);
   });
-
-  clearBtn.addEventListener('click', () => {
-    jQuery(select).val(null).trigger('change');
-    applyFilter([]);
-  });
 });
+
+// Reusable Clear Filters function (linked to the button via onclick)
+function bcmClearFilters() {
+  const select = document.getElementById('bcm-tag-select');
+  if (select && jQuery(select).select2) {
+    jQuery(select).val(null).trigger('change');
+  }
+}

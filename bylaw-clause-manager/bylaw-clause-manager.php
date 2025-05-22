@@ -335,12 +335,41 @@ function bcm_sequence_to_int($seq) {
 add_shortcode('render_bylaws', function($atts) {
     $atts = shortcode_atts([ 'group' => null ], $atts);
     ob_start();
+
+    // Query the latest modified clause in this group (or all)
+    $args = [
+        'post_type'      => 'bylaw_clause',
+        'posts_per_page' => 1,
+        'orderby'        => 'modified',
+        'order'          => 'DESC',
+        'post_status'    => 'any',
+        'fields'         => 'ids',
+    ];
+
+    if (!empty($atts['group'])) {
+        $args['meta_query'] = [[
+            'key'     => 'bylaw_group',
+            'value'   => $atts['group'],
+            'compare' => '='
+        ]];
+    }
+
+    $latest = get_posts($args);
+    $latest_time = $latest ? get_post_modified_time('F j, Y', false, $latest[0]) : '';
+
     echo '<div class="bcm-wrapper">';
+
+    if ($latest_time) {
+        echo '<div class="bcm-updated"><strong>Last Updated: ' . esc_html($latest_time) . '</strong></div>';
+    }
+
     echo '<div id="bcm-toolbar">
             <label for="bcm-tag-select">Filter by Tag:</label>
             <select id="bcm-tag-select" multiple style="width: 300px;"></select>
-            <button onclick="window.print()">Print / Export PDF</button>
+            <button type="button" onclick="bcmClearFilters()">Clear Filters</button>
+            <button type="button" onclick="window.print()">Print / Export PDF</button>
           </div>';
+
     bcm_render_bylaw_tree(0, 0, $atts['group']);
     echo '</div>';
     return ob_get_clean();
