@@ -3,12 +3,12 @@
  * Plugin Name: Bylaw Clause Manager
  * Text Domain: bylaw-clause-manager
  * Description: Manage nested, trackable bylaws with tagging, filtering, recursive rendering, anchors, and Select2 filtering.
- * Version: 1.0.25
+ * Version: 1.0.27
  * Author: greghacke
  * Author URI: https://www.owbn.net
  * License: GPL-2.0-or-later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: bylaw_clause_manager
+ * Text Domain: bylaw-clause-manager
  * Domain Path: /languages
  * GitHub Plugin URI: https://github.com/One-World-By-Night/bylaw_clause_manager
  * GitHub Branch: main
@@ -42,6 +42,18 @@ function bcm_register_bylaw_clause_cpt() {
     ]);
 }
 add_action('init', 'bcm_register_bylaw_clause_cpt');
+
+add_action('current_screen', function($screen) {
+    if (!function_exists('acf_get_field_group')) {
+        return;
+    }
+
+    // Force loading the ACF field group for post list screen
+    if (is_admin() && $screen->post_type === 'bylaw_clause') {
+        acf_get_field_groups(); // Forces loading of JSON
+    }
+});
+
 
 
 function bcm_fix_clause_parents() {
@@ -84,6 +96,7 @@ add_filter('manage_bylaw_clause_posts_columns', function($columns) {
         if ($key === 'title') {
             $new['bylaw_group'] = 'Bylaw Group';
             $new['parent_clause'] = 'Parent Clause';
+            $new['tags'] = 'Tags';
         }
     }
     return $new;
@@ -96,12 +109,34 @@ add_action('manage_bylaw_clause_posts_custom_column', function($column, $post_id
     } elseif ($column === 'parent_clause') {
         $parent_id = get_field('parent_clause', $post_id);
         echo $parent_id ? esc_html(get_the_title($parent_id)) : '—';
+    } elseif ($column === 'tags') {
+        echo '<pre>';
+        print_r([
+            'meta'        => get_post_meta($post_id, 'tags', true),
+            'acf_field'   => get_field('tags', $post_id),
+            'meta_keys'   => get_post_meta($post_id),
+        ]);
+        echo '</pre>';
     }
+
+    // ✅ Add this block to ALL rows (regardless of column)
+    echo wp_kses_post(sprintf(
+        '<div class="bcm-quickedit-data" 
+            data-id="%d" 
+            data-bcm-group="%s" 
+            data-bcm-parent="%d" 
+            data-bcm-tags="%s"></div>',
+        $post_id,
+        esc_attr(get_field('bylaw_group', $post_id) ?: ''),
+        (int) get_field('parent_clause', $post_id),
+        esc_attr(get_field('tags', $post_id) ?: '')
+    ));
 }, 10, 2);
 
 add_filter('manage_edit-bylaw_clause_sortable_columns', function($columns) {
     $columns['bylaw_group'] = 'bylaw_group';
     $columns['parent_clause'] = 'parent_clause';
+    $columns['tags'] = 'tags';
     return $columns;
 });
 
@@ -209,7 +244,7 @@ add_action('restrict_manage_posts', function() {
     // Render title input
     printf(
         '<input type="text" name="bcm_title_filter" placeholder="%s" value="%s" style="margin-left: 10px;" />',
-        esc_attr__('Filter Title', 'bylaw_clause_manager'),
+        esc_attr__('Filter Title', 'bylaw-clause-manager'),
         esc_attr($title_filter)
     );
 });
@@ -220,21 +255,21 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
     if ($parent_id === 0) {
         $meta_query[] = [
             'relation' => 'OR',
-            [ 'key' => 'parent_clause', 'compare' => 'NOT EXISTS' ],
-            [ 'key' => 'parent_clause', 'value' => '', 'compare' => '=' ],
-            [ 'key' => 'parent_clause', 'value' => '0', 'compare' => '=' ]
+            ['key' => 'parent_clause', 'compare' => 'NOT EXISTS'],
+            ['key' => 'parent_clause', 'value' => '', 'compare' => '='],
+            ['key' => 'parent_clause', 'value' => '0', 'compare' => '=']
         ];
     } else {
-        $meta_query[] = [ 'key' => 'parent_clause', 'value' => $parent_id, 'compare' => '=' ];
+        $meta_query[] = ['key' => 'parent_clause', 'value' => $parent_id, 'compare' => '='];
     }
 
     if ($depth === 0 && $group) {
-        $meta_query[] = [ 'key' => 'bylaw_group', 'value' => $group, 'compare' => '=' ];
+        $meta_query[] = ['key' => 'bylaw_group', 'value' => $group, 'compare' => '='];
     }
 
     $clauses = get_posts([
-        'post_type' => 'bylaw_clause',
-        'meta_query' => $meta_query,
+        'post_type'   => 'bylaw_clause',
+        'meta_query'  => $meta_query,
         'numberposts' => -1,
     ]);
 
@@ -246,14 +281,13 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
     if (!$clauses) return;
 
     foreach ($clauses as $clause) {
-        $section = get_field('section_id', $clause->ID);
-        $content = $clause->post_content;
-        $tags = get_field('tags', $clause->ID);
-        $parent = get_field('parent_clause', $clause->ID);
-        $vote_date = get_field('vote_date', $clause->ID);
-        $vote_ref = get_field('vote_reference', $clause->ID);
+        $section   = get_field('section_id', $clause->ID);
+        $content   = $clause->post_content;
+        $tags      = get_field('tags', $clause->ID);
+        $parent    = get_field('parent_clause', $clause->ID);
+        $vote_marker = bcm_generate_vote_tooltip($clause->ID);
 
-        if ((int) $clause->ID === (int) $parent) continue;
+        if ((int)$clause->ID === (int)$parent) continue;
 
         // Tag-based classes
         $class_string = '';
@@ -262,22 +296,19 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
             $class_string = implode(' ', array_map('sanitize_html_class', $tag_array));
         }
 
-        // Vote marker
-        $vote_marker = bcm_generate_vote_tooltip($clause->ID);
-
-        // Render block
+        // Build the clause HTML
         $anchor_id = sanitize_title($section);
-        $margin = 20 * (int) $depth;
+        $margin    = 20 * (int)$depth;
+
         echo '<div class="bylaw-clause ' . esc_attr($class_string) . '" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ?: 0) . '" style="margin-left:' . esc_attr($margin) . 'px;">';
 
-        echo "<div class=\"bylaw-label-wrap\">\n";
-        echo "  <span class=\"bylaw-label-number\">" . esc_html($section) . ".</span>\n";
-        echo '<div class="bylaw-label-text">' . wp_kses_post(apply_filters('the_content', $content)) . '</div>' . "\n";
-        echo '    ' . wp_kses_post($vote_marker) . "\n";
-        echo "  </div>\n";
-        echo "</div>\n";
+        echo '  <div class="bylaw-label-wrap">';
+        echo '    <span class="bylaw-label-number">' . esc_html($section) . '.</span>';
+        echo '    <div class="bylaw-label-text">' . wp_kses_post(apply_filters('the_content', $content)) . '</div>';
+        echo '    ' . wp_kses_post($vote_marker);
+        echo '  </div>'; // Close bylaw-label-wrap
 
-        echo '</div>';
+        echo '</div>'; // Close bylaw-clause
 
         bcm_render_bylaw_tree($clause->ID, $depth + 1, $group);
     }
@@ -449,21 +480,35 @@ function bcm_enqueue_assets() {
 }
 
 add_action('admin_enqueue_scripts', function($hook) {
-    if ($hook !== 'edit.php') return;
+    global $typenow;
 
-    // Enqueue local Select2 CSS and JS
+    // Only enqueue on the Bylaw Clause list page
+    if ($hook !== 'edit.php' || $typenow !== 'bylaw_clause') return;
+
+    $plugin_url = plugins_url('', __FILE__);
+
+    // Select2 assets
     wp_enqueue_style(
         'select2-admin-style',
-        plugins_url('css/select2.min.css', __FILE__),
+        $plugin_url . '/css/select2.min.css',
         [],
         '4.1.0'
     );
 
     wp_enqueue_script(
         'select2-admin-script',
-        plugins_url('js/select2.min.js', __FILE__),
+        $plugin_url . '/js/select2.min.js',
         ['jquery'],
         '4.1.0',
+        true
+    );
+
+    // ✅ This is the part that fixes the missing script
+    wp_enqueue_script(
+        'bcm-filter',
+        plugins_url('js/filter.js', __FILE__), // Points to correct plugin-relative URL
+        ['jquery', 'select2-admin-script'],
+        filemtime(plugin_dir_path(__FILE__) . 'js/filter.js'),
         true
     );
 
@@ -659,63 +704,66 @@ add_action('wp_enqueue_scripts', 'bcm_enqueue_assets', 100);
 add_action('quick_edit_custom_box', function($column, $post_type) {
     if ($post_type !== 'bylaw_clause') return;
 
-    if (in_array($column, ['bylaw_group', 'parent_clause'], true)) {
-        ?>
-        <fieldset class="inline-edit-col-right inline-custom-meta">
-            <div class="inline-edit-col">
+    // ✅ Only output ONCE — doesn't matter which column triggered it
+    static $printed = false;
+    if ($printed) return;
+    $printed = true;
+    ?>
+    <fieldset class="inline-edit-col-right inline-custom-meta">
+        <div class="inline-edit-col">
+            <?php wp_nonce_field('bcm_qe_save', 'bcm_qe_nonce'); ?>
 
-                <?php
-                // Add nonce once inside the fieldset for security
-                wp_nonce_field('bcm_qe_save', 'bcm_qe_nonce');
+            <!-- Bylaw Group -->
+            <?php $field = get_field_object('field_bylaw_group'); ?>
+            <?php if ($field && !empty($field['choices'])): ?>
+                <label>
+                    <span class="title"><?php esc_html_e('Bylaw Group', 'bylaw-clause-manager'); ?></span>
+                    <select name="bcm_qe_bylaw_group" class="bcm-qe-bylaw-group">
+                        <option value=""><?php esc_html_e('— Select —', 'bylaw-clause-manager'); ?></option>
+                        <?php foreach ($field['choices'] as $val => $label): ?>
+                            <option value="<?php echo esc_attr($val); ?>"><?php echo esc_html($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+            <?php endif; ?>
 
-                if ($column === 'bylaw_group'):
-                    $field = get_field_object('field_bylaw_group');
-                    if ($field && !empty($field['choices'])): ?>
-                        <label>
-                            <span class="title"><?php esc_html_e('Bylaw Group', 'bylaw_clause_manager'); ?></span>
-                            <select name="bcm_qe_bylaw_group" class="bcm-qe-bylaw-group">
-                                <option value=""><?php esc_html_e('— Select —', 'bylaw_clause_manager'); ?></option>
-                                <?php foreach ($field['choices'] as $val => $label): ?>
-                                    <option value="<?php echo esc_attr($val); ?>"><?php echo esc_html($label); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
-                    <?php endif; ?>
-                <?php endif; ?>
+            <!-- Parent Clause -->
+            <?php
+            $clauses = get_posts([
+                'post_type' => 'bylaw_clause',
+                'posts_per_page' => -1,
+                'orderby' => 'title',
+                'order' => 'ASC',
+                'post_status' => ['publish', 'draft', 'pending', 'private'],
+            ]);
+            ?>
+            <label style="margin-top: 10px; display: block;">
+                <span class="title"><?php esc_html_e('Parent Clause', 'bylaw-clause-manager'); ?></span>
+                <select name="bcm_qe_parent_clause" class="bcm-qe-parent-clause bcm-select2" style="width: 100%;">
+                    <option value=""><?php esc_html_e('— Select —', 'bylaw-clause-manager'); ?></option>
+                    <?php foreach ($clauses as $c):
+                        $sid = get_field('section_id', $c->ID);
+                        $title = get_the_title($c->ID);
+                        $content = wp_strip_all_tags($c->post_content);
+                        $preview = mb_substr($content, 0, 25);
+                        if (mb_strlen($content) > 25) {
+                            $preview .= '…';
+                        }
+                        $label = trim("{$title} {$preview}");
+                        ?>
+                        <option value="<?php echo esc_attr($c->ID); ?>"><?php echo esc_html($label); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
 
-                <?php if ($column === 'parent_clause'):
-                    $clauses = get_posts([
-                        'post_type' => 'bylaw_clause',
-                        'posts_per_page' => -1,
-                        'orderby' => 'title',
-                        'order' => 'ASC',
-                        'post_status' => ['publish', 'draft', 'pending', 'private'],
-                    ]);
-                    ?>
-                    <label style="margin-top: 10px; display: block;">
-                        <span class="title"><?php esc_html_e('Parent Clause', 'bylaw_clause_manager'); ?></span>
-                        <select name="bcm_qe_parent_clause" class="bcm-qe-parent-clause bcm-select2" style="width: 100%;">
-                            <option value=""><?php esc_html_e('— Select —', 'bylaw_clause_manager'); ?></option>
-                            <?php foreach ($clauses as $c):
-                                $sid = get_field('section_id', $c->ID);
-                                $title = get_the_title($c->ID);
-                                $content = wp_strip_all_tags($c->post_content);
-                                $preview = mb_substr($content, 0, 25);
-                                if (mb_strlen($content) > 25) {
-                                    $preview .= '…';
-                                }
-                                $label = trim(($sid ? "{$sid} " : '') . $title . ' ' . $preview);
-                                ?>
-                                <option value="<?php echo esc_attr($c->ID); ?>"><?php echo esc_html($label); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-                <?php endif; ?>
-
-            </div>
-        </fieldset>
-        <?php
-    }
+            <!-- Tags -->
+            <label style="margin-top: 10px; display: block;">
+                <span class="title"><?php esc_html_e('Tags (comma-separated)', 'bylaw-clause-manager'); ?></span>
+                <input type="text" name="bcm_qe_tags" class="bcm-qe-tags" style="width: 100%;" />
+            </label>
+        </div>
+    </fieldset>
+    <?php
 }, 10, 2);
 
 add_action('save_post_bylaw_clause', function($post_id) {
@@ -760,4 +808,12 @@ add_action('save_post_bylaw_clause', function($post_id) {
             update_field('field_parent_clause', null, $post_id);
         }
     }
+
+    // Save Tags
+    if (isset($_POST['bcm_qe_tags'])) {
+        $tags_raw = wp_unslash($_POST['bcm_qe_tags']);
+        $tags = sanitize_text_field($tags_raw);
+        update_field('field_tags', $tags, $post_id);
+    }
+
 });

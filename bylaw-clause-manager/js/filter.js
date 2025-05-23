@@ -69,3 +69,49 @@ function bcmClearFilters() {
     jQuery(select).val(null).trigger('change');
   }
 }
+
+// QUICK EDIT FIELD POPULATION
+document.addEventListener('DOMContentLoaded', () => {
+  function initSelect2QuickEdit() {
+    jQuery('.bcm-select2').each(function () {
+      if (jQuery.fn.select2) {
+        if (jQuery(this).hasClass('select2-hidden-accessible')) {
+          jQuery(this).select2('destroy');
+        }
+        jQuery(this).select2({ width: '100%' });
+      }
+    });
+  }
+
+  function populateQuickEditFields(postId) {
+    const row = document.getElementById(`post-${postId}`);
+    const dataDiv = row?.querySelector('.bcm-quickedit-data');
+
+    if (!dataDiv) return;
+
+    const group = dataDiv.dataset.bcmGroup || '';
+    const parent = dataDiv.dataset.bcmParent || '';
+    const tags = dataDiv.dataset.bcmTags || '';
+
+    const $ = jQuery;
+    $('select[name="bcm_qe_bylaw_group"]').val(group);
+    $('select[name="bcm_qe_parent_clause"]').val(parent).trigger('change');
+    $('input[name="bcm_qe_tags"]').val(tags);
+  }
+
+  // On Quick Edit click
+  jQuery(document).on('click', '.editinline', function () {
+    const postId = jQuery(this).closest('tr').attr('id').replace('post-', '');
+    setTimeout(() => {
+      initSelect2QuickEdit();
+      populateQuickEditFields(postId);
+    }, 100);
+  });
+
+  // On AJAX save (optional re-init)
+  jQuery(document).ajaxSuccess((e, xhr, settings) => {
+    if (settings.data && settings.data.includes('action=inline-save')) {
+      setTimeout(initSelect2QuickEdit, 200);
+    }
+  });
+});
