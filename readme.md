@@ -8,7 +8,7 @@ Requires PHP: 7.4
 License: GPL-2.0-or-later  
 License URI: http://www.gnu.org/licenses/gpl-2.0.html  
 
-Manage and display nested bylaws or hierarchical clauses with ACF support, filtering, tooltips, and Select2-enhanced editing.
+Manage and display nested bylaws or hierarchical clauses with filtering, tooltips, and Select2-enhanced editing.
 
 ## Description
 **Bylaw Clause Manager** is a custom WordPress plugin that allows organizations like OWbN to manage a complex, hierarchical set of bylaws in a structured, modular, and trackable way. Each clause is independently editable, tagged for filtering, version-controlled, and rendered in a readable nested format — just like a legal document, but with modern digital accessibility.
