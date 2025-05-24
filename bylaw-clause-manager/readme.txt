@@ -8,7 +8,7 @@ Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Manage and display nested bylaws or hierarchical clauses with ACF support, filtering, tooltips, and Select2-enhanced editing.
+Manage and display nested bylaws or hierarchical clauses with filtering, tooltips, and Select2-enhanced editing.
 
 == Description ==
 
