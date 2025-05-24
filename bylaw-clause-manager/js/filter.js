@@ -1,16 +1,102 @@
+// ── Dynamic Group Row Handling for Bylaw Group Settings Page ──
+document.addEventListener('DOMContentLoaded', () => {
+  const table = document.getElementById('bcm-group-table');
+  const addBtn = document.getElementById('bcm-add-group');
+
+  if (addBtn && table) {
+    addBtn.addEventListener('click', () => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><input type="text" name="bcm_groups_keys[]" value="" placeholder="e.g. character" required></td>
+        <td><input type="text" name="bcm_groups_labels[]" value="" placeholder="e.g. Character" required></td>
+        <td><button type="button" class="bcm-remove-group">Remove</button></td>
+      `;
+      table.querySelector('tbody').appendChild(row);
+    });
+
+    table.addEventListener('click', (e) => {
+      if (e.target.classList.contains('bcm-remove-group')) {
+        e.target.closest('tr').remove();
+      }
+    });
+  }
+});
+
+// ── Quick Edit Handler for Bylaw Clause Custom Fields ──
+jQuery(function ($) {
+  function populateQuickEditFields(postId) {
+    const $dataDiv = $('.bcm-quickedit-data[data-id="' + postId + '"]');
+
+    console.log('💡 Quick Edit Init');
+    console.log('Post ID:', postId);
+    console.log('Found data div?', $dataDiv.length);
+    console.log('Data:', $dataDiv.data());
+
+    const $editRow = $('#edit-' + postId);
+
+    if (!$dataDiv.length || !$editRow.length) return;
+
+    const group  = $dataDiv.data('bcm-group') || '';
+    const tags   = $dataDiv.data('bcm-tags') || '';
+    const parent = $dataDiv.data('bcm-parent') || '';
+
+    console.log(`Quick Edit Values for post ${postId}:`, {
+      group,
+      tags,
+      parent
+    });
+
+    $editRow.find('input[name="bcm_qe_tags"]').val(tags);
+    $editRow.find('select[name="bcm_qe_parent_clause"]').val(parent).trigger('change');
+    $editRow.find('select[name="bcm_qe_bylaw_group"]').val(group).trigger('change');
+
+    // Init Select2 on dropdowns
+    $editRow.find('select').each(function () {
+      if ($.fn.select2) {
+        if ($(this).hasClass('select2-hidden-accessible')) {
+          $(this).select2('destroy');
+        }
+        $(this).select2({ width: '100%' });
+      }
+    });
+  }
+
+  $(document).on('click', 'button.editinline', function () {
+    console.log('✅ editinline clicked');
+
+    const $row = $(this).closest('tr');
+    const postId = $row.attr('id')?.replace('post-', '');
+    if (postId) {
+      setTimeout(() => populateQuickEditFields(postId), 100);
+    }
+  });
+
+  $(document).ajaxSuccess(function (e, xhr, settings) {
+    if (settings.data && settings.data.includes('action=inline-save')) {
+      setTimeout(() => {
+        $('tr.inline-edit-row').each(function () {
+          const postId = $(this).attr('id')?.replace('edit-', '');
+          if (postId) populateQuickEditFields(postId);
+        });
+      }, 200);
+    }
+  });
+});
+
+// ── Frontend Tag Filtering for [render_bylaws] ──
 document.addEventListener('DOMContentLoaded', () => {
   const clauses = document.querySelectorAll('.bylaw-clause');
   const tagSet = new Set();
 
-  // Extract tags from class names
   clauses.forEach(clause => {
     clause.classList.forEach(cls => {
       if (cls !== 'bylaw-clause') tagSet.add(cls);
     });
   });
 
-  // Populate Select2 dropdown
   const select = document.getElementById('bcm-tag-select');
+  if (!select) return;
+
   tagSet.forEach(tag => {
     const option = document.createElement('option');
     option.value = tag;
@@ -18,13 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
     select.appendChild(option);
   });
 
-  // Initialize Select2
   jQuery(select).select2({
     placeholder: 'Filter by tag',
     width: 'resolve'
   });
 
-  // Core filter logic
   function applyFilter(selected) {
     const showIds = new Set();
     const clausesById = {};
@@ -55,14 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Change handler for tag selection
   jQuery(select).on('change', () => {
     const selected = jQuery(select).val() || [];
     applyFilter(selected);
   });
 });
 
-// Reusable Clear Filters function (linked to the button via onclick)
+// ── Global Helper to Clear Filters ──
 function bcmClearFilters() {
   const select = document.getElementById('bcm-tag-select');
   if (select && jQuery(select).select2) {
@@ -70,48 +153,26 @@ function bcmClearFilters() {
   }
 }
 
-// QUICK EDIT FIELD POPULATION
-document.addEventListener('DOMContentLoaded', () => {
-  function initSelect2QuickEdit() {
-    jQuery('.bcm-select2').each(function () {
-      if (jQuery.fn.select2) {
-        if (jQuery(this).hasClass('select2-hidden-accessible')) {
-          jQuery(this).select2('destroy');
-        }
-        jQuery(this).select2({ width: '100%' });
-      }
+// --- Bylaw Group Settings (Add/Remove rows) ---
+document.addEventListener('DOMContentLoaded', function () {
+    const table = document.querySelector('#bcm-group-table tbody');
+    const addBtn = document.querySelector('#bcm-add-group');
+
+    if (!table || !addBtn) return;
+
+    addBtn.addEventListener('click', () => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="text" name="bcm_groups_keys[]" value="" required></td>
+            <td><input type="text" name="bcm_groups_labels[]" value="" required></td>
+            <td><button type="button" class="bcm-remove-group">Remove</button></td>
+        `;
+        table.appendChild(row);
     });
-  }
 
-  function populateQuickEditFields(postId) {
-    const row = document.getElementById(`post-${postId}`);
-    const dataDiv = row?.querySelector('.bcm-quickedit-data');
-
-    if (!dataDiv) return;
-
-    const group = dataDiv.dataset.bcmGroup || '';
-    const parent = dataDiv.dataset.bcmParent || '';
-    const tags = dataDiv.dataset.bcmTags || '';
-
-    const $ = jQuery;
-    $('select[name="bcm_qe_bylaw_group"]').val(group);
-    $('select[name="bcm_qe_parent_clause"]').val(parent).trigger('change');
-    $('input[name="bcm_qe_tags"]').val(tags);
-  }
-
-  // On Quick Edit click
-  jQuery(document).on('click', '.editinline', function () {
-    const postId = jQuery(this).closest('tr').attr('id').replace('post-', '');
-    setTimeout(() => {
-      initSelect2QuickEdit();
-      populateQuickEditFields(postId);
-    }, 100);
-  });
-
-  // On AJAX save (optional re-init)
-  jQuery(document).ajaxSuccess((e, xhr, settings) => {
-    if (settings.data && settings.data.includes('action=inline-save')) {
-      setTimeout(initSelect2QuickEdit, 200);
-    }
-  });
+    table.addEventListener('click', (e) => {
+        if (e.target && e.target.matches('.bcm-remove-group')) {
+            e.target.closest('tr').remove();
+        }
+    });
 });

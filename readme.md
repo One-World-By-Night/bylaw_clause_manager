@@ -15,7 +15,7 @@ Manage and display nested bylaws or hierarchical clauses with ACF support, filte
 
 This plugin is purpose-built for domains where clauses need to be tracked individually, filtered by thematic relevance (e.g., "Anarch", "Caitiff"), and presented with full contextual hierarchy for readability and transparency.
 
-Note, this plugin relies on the free Advanced Custom Fields plugin, available through the WordPress Plugins directory or directly at www.advancedcustomfields.com
+Note: This plugin version has no reliance on ACF
 
 Licensed under GNU/GPL v2.0
 

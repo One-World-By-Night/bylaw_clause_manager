@@ -3,7 +3,7 @@ Contributors: owbnwebcoord, greghacke
 Tags: bylaws, nested content, legal clauses, acf, custom post types
 Requires at least: 6.0
 Tested up to: 6.8
-Stable tag: 1.0.26
+Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -16,7 +16,7 @@ Manage and display nested bylaws or hierarchical clauses with ACF support, filte
 
 This plugin is purpose-built for domains where clauses need to be tracked individually, filtered by thematic relevance (e.g., "Anarch", "Caitiff"), and presented with full contextual hierarchy for readability and transparency.
 
-Note: This plugin relies on the free [Advanced Custom Fields](https://www.advancedcustomfields.com) plugin, available from the WordPress Plugin Directory.
+Note: This plugin version has no reliance on ACF
 
 == How It Works ==
 
