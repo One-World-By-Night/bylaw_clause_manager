@@ -1,6 +1,6 @@
 === Bylaw Clause Manager ===
 Contributors: owbnwebcoord, greghacke
-Tags: bylaws, nested content, legal clauses, acf, custom post types
+Tags: bylaws, nested content, legal clauses, custom post types
 Requires at least: 6.0
 Tested up to: 6.8
 Stable tag: 2.0.0
@@ -22,7 +22,7 @@ Note: This plugin version has no reliance on ACF
 
 === 1. Custom Post Type: `bylaw_clause` ===
 
-Each bylaw clause is a WordPress post with structured ACF fields:
+Each bylaw clause is a WordPress post with structured fields:
 - **Section ID** (`3`)
 - **Post Title** (recommended: use a machine-readable version of the Section ID, e.g., `2_g_i_3`)
 - **Content** (rich text body of the clause)
@@ -104,7 +104,7 @@ Plugin Setup:
 
 == Changelog ==
 
-= 1.0.25 =
+= 2.0.0 =
 * First public release
 * Added shortcode support for recursive rendering
 * Added tag filtering with Select2
@@ -112,9 +112,6 @@ Plugin Setup:
 * Supports custom columns, sorting, filters, and quick edit
 
 == Upgrade Notice ==
-
-= 1.0.25 =
-Initial stable release with full recursive display, vote tooltips, ACF integration, and Select2 filtering.
 
 == License ==
 
