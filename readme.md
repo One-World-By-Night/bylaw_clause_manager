@@ -1,12 +1,12 @@
 # Bylaw Clause Manager
-Contributors: owbnwebcoord, greghacke
-Tags: bylaws, nested content, legal clauses, acf, custom post types
-Requires at least: 6.0
-Tested up to: 6.8
-Stable tag: 1.0.26
-Requires PHP: 7.4
-License: GPL-2.0-or-later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Contributors: owbnwebcoord, greghacke  
+Tags: bylaws, nested content, legal clauses, acf, custom post types  
+Requires at least: 6.0  
+Tested up to: 6.8  
+Stable tag: 1.0.26  
+Requires PHP: 7.4  
+License: GPL-2.0-or-later  
+License URI: http://www.gnu.org/licenses/gpl-2.0.html  
 
 Manage and display nested bylaws or hierarchical clauses with ACF support, filtering, tooltips, and Select2-enhanced editing.
 
