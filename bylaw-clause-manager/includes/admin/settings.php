@@ -2,7 +2,7 @@
 
 /** File: includes/admin/settings.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.0
+ * @version 2.1.1
  * @author greghacke
  * Function: Set up the admin settings page for managing bylaw groups
  */

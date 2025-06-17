@@ -2,7 +2,7 @@
 
 /** File: includes/tools/functions.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.0
+ * @version 2.1.1
  * @author greghacke
  * Function: Tools functions for the Bylaw Clause Manager plugin
  */

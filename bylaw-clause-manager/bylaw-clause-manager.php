@@ -1,10 +1,10 @@
 <?php
 /**
- * Plugin Name: WP Plugin Nam
+ * Plugin Name: Bylaw Clause Manager
  * Text Domain: bylaw-clause-manager
  * Plugin URI: https://www.github.com/One-World-By-Night/bylaw-clause-manager
  * Description: Short description of the plugin functionality.
- * Version: 2.1.0
+ * Version: 2.1.1
  * Author: list, of, authors, separated, by, commas
  * Contributors: list, of, contributors, separated, by, commas
  * Author URI: https://www.github.com/One-World-By-Night

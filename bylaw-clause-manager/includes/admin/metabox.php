@@ -2,7 +2,7 @@
 
 /** File: includes/admin/metabox.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.0
+ * @version 2.1.1
  * @author greghacke
  * Function: Register and render the Bylaw Clause metabox in the admin area
  */
