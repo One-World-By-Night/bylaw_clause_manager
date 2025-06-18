@@ -2,7 +2,7 @@
 
 /** File: includes/helper/static-data.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.1
+ * @version 2.1.2
  * @author greghacke
  * Function: Static data helper functions for the Bylaw Clause Manager plugin
  */

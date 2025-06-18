@@ -23,6 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── Quick Edit Handler for Bylaw Clause Custom Fields ──
+function bcmPrefixMatcher(params, data) {
+  if (!data || typeof data.text !== 'string') return null;
+  if (!params || typeof params.term !== 'string') return data;
+
+  const term = params.term.toLowerCase().trim();
+  const text = data.text.toLowerCase().trim();
+
+  // Only match the clause title before the first " – "
+  const titlePart = text.split('–')[0].trim(); // e.g. "1_b_i"
+
+  return titlePart.startsWith(term) ? data : null;
+}
+
 jQuery(function ($) {
   function populateQuickEditFields(postId) {
     const $dataDiv = $('.bcm-quickedit-data[data-id="' + postId + '"]');
@@ -81,6 +94,20 @@ jQuery(function ($) {
       }, 200);
     }
   });
+  
+  // ── Initialize Select2 on the metabox parent clause field ──
+  setTimeout(() => {
+    const $parent = $('#bcm_parent_clause');
+    if ($parent.length && typeof $.fn.select2 === 'function') {
+      $parent.select2({
+        width: '100%',
+        matcher: bcmPrefixMatcher,
+        placeholder: 'Select Parent Clause',
+        allowClear: true
+      });
+      console.log('✅ Select2 initialized on #bcm_parent_clause');
+    }
+  }, 100);
 });
 
 // ── Frontend Tag Filtering for [render_bylaws] ──

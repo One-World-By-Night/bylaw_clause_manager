@@ -2,7 +2,7 @@
 
 /** File: includes/render/admin.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.1
+ * @version 2.1.2
  * @author greghacke
  * Function: 
  */
@@ -223,3 +223,39 @@ add_action('quick_edit_custom_box', function($column, $post_type) {
     <?php
 }, 10, 2);
 
+add_action('pre_get_posts', function($query) {
+    if (!is_admin() || !$query->is_main_query()) return;
+
+    global $typenow;
+    if ($typenow !== 'bylaw_clause') return;
+
+    if (
+        isset($_GET['bcm_filter_nonce_field']) &&
+        wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['bcm_filter_nonce_field'])), 'bcm_filter_nonce')
+    ) {
+        $title_filter = isset($_GET['bcm_title_filter']) ? sanitize_text_field(wp_unslash($_GET['bcm_title_filter'])) : '';
+
+        if ($title_filter !== '') {
+            // Fetch matching post IDs manually with strict prefix match
+            $matched_ids = get_posts([
+                'post_type'      => 'bylaw_clause',
+                'post_status'    => ['publish', 'draft', 'pending', 'private'],
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'suppress_filters' => true,
+            ]);
+
+            $matching_ids = [];
+
+            foreach ($matched_ids as $id) {
+                $title = get_the_title($id);
+                if (strpos($title, $title_filter) === 0) {
+                    $matching_ids[] = $id;
+                }
+            }
+
+            // If no matches, force no results
+            $query->set('post__in', $matching_ids ?: [0]);
+        }
+    }
+});

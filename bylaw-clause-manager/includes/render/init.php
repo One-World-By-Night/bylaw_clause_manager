@@ -2,7 +2,7 @@
 
 /** File: includes/render/init.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.1
+ * @version 2.1.2
  * @author greghacke
  * Function: Init render functionality for the plugin
  */

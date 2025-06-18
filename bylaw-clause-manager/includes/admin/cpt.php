@@ -2,7 +2,7 @@
 
 /** File: includes/admin/enqueue.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.1
+ * @version 2.1.2
  * @author greghacke
  * Function: Create the custom post type for bylaw clauses
  */

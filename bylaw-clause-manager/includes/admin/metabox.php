@@ -2,7 +2,7 @@
 
 /** File: includes/admin/metabox.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.1
+ * @version 2.1.2
  * @author greghacke
  * Function: Register and render the Bylaw Clause metabox in the admin area
  */
@@ -65,7 +65,7 @@ function bcm_render_clause_metabox($post) {
     echo '</select></label></p>';
 
     echo '<p><label><strong>' . esc_html__('Parent Clause', 'bylaw-clause-manager') . '</strong><br />';
-    echo '<select name="bcm_parent_clause" style="width:100%;">';
+    echo '<select name="bcm_parent_clause" id="bcm_parent_clause" class="bcm-parent-select" style="width:100%;">';
     echo '<option value="">' . esc_html__('— None —', 'bylaw-clause-manager') . '</option>';
     foreach ($clauses as $clause) {
         if ($clause->ID == $post->ID) continue; // Avoid self-parenting

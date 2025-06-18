@@ -2,7 +2,7 @@
 
 /** File: includes/hooks/init.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.1
+ * @version 2.1.2
  * @author greghacke
  * Function: Init hooks functionality for the plugin
  */

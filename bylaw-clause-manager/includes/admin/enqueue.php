@@ -2,7 +2,7 @@
 
 /** File: includes/admin/enqueue.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.1
+ * @version 2.1.2
  * @author greghacke
  * Function: Handles enqueuing of scripts and styles for Bylaw Clause Manager
  */
@@ -13,18 +13,20 @@ defined('ABSPATH') || exit;
  * Includes Select2, filter.js, and custom styling.
  */
 function bcm_admin_enqueue_assets($hook) {
-    $allowed_hooks = [
-        'edit.php',
-        'bylaw-clause_page_bcm_bylaw_groups',
-    ];
+    // $allowed_hooks = [
+    //     'edit.php',
+    //     'post.php',
+    //     'post-new.php',
+    //     'bylaw-clause_page_bcm_bylaw_groups',
+    // ];
 
-    if (!in_array($hook, $allowed_hooks, true)) {
-        return;
-    }
+    // if (!in_array($hook, $allowed_hooks, true)) {
+    //     return;
+    // }
 
     // __DIR__ resolves to /includes/admin/
-    $base_url  = plugin_dir_url(__DIR__) . '../assets/'; // go UP one level
-    $base_path = plugin_dir_path(__DIR__) . '../assets/';
+    $base_url  = plugin_dir_url(__DIR__) . '/assets/';
+    $base_path = plugin_dir_path(__DIR__) . '/assets/';
 
     wp_enqueue_style('bcm-select2', $base_url . 'css/select2.min.css', [], '4.1.0');
     wp_enqueue_script('bcm-select2', $base_url . 'js/select2.min.js', ['jquery'], '4.1.0', true);

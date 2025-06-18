@@ -2,7 +2,7 @@
 
 /** File: includes/hooks/filters.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.1
+ * @version 2.1.2
  * @author greghacke
  * Function: Filters for the Bylaw Clause Manager plugin.
  */

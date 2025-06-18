@@ -2,7 +2,7 @@
 
 /** File: includes/render/listing.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.1
+ * @version 2.1.2
  * @author author
  * Function: Generate a hierarchical tree structure of Bylaw Clauses.
  */
@@ -106,5 +106,5 @@ function bcm_generate_vote_tooltip($clause_id) {
     if ($vote_url)  $tooltip_parts[] = 'URL: <a href="' . esc_url($vote_url) . '" target="_blank" rel="noopener noreferrer">' . esc_html($vote_url) . '</a>';
 
     // Return tooltip safely inside span
-    return '<span class="vote-tooltip">&nbsp;📜<span class="tooltip-content">' . implode('<br />', $tooltip_parts) . '</span></span>';
+    return '<span class="vote-tooltip">[ref]<span class="tooltip-content">' . implode('<br />', $tooltip_parts) . '</span></span>';
 }

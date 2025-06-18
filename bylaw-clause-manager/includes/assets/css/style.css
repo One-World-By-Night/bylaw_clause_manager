@@ -14,7 +14,6 @@
 }
 
 .vote-tooltip {
-  all: unset;
   position: relative;
   display: inline-block;
   cursor: help;
@@ -23,8 +22,7 @@
   margin-left: 4px;
 }
 
-.vote-tooltip::after {
-    content: attr(data-tooltip) !important;
+.vote-tooltip .tooltip-content {
   position: absolute;
   top: 120%;
   left: 50%;
@@ -45,7 +43,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-.vote-tooltip:hover::after {
+.vote-tooltip:hover .tooltip-content {
   opacity: 1;
   pointer-events: auto;
 }
