@@ -5,8 +5,8 @@
  * Plugin URI: https://www.github.com/One-World-By-Night/bylaw-clause-manager
  * Description: Short description of the plugin functionality.
  * Version: 2.1.1
- * Author: list, of, authors, separated, by, commas
- * Contributors: list, of, contributors, separated, by, commas
+ * Author: greghacke
+ * Contributors: greghacke
  * Author URI: https://www.github.com/One-World-By-Night
  * License: GPL-2.0-or-later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html

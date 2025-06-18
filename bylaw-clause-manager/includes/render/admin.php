@@ -222,3 +222,4 @@ add_action('quick_edit_custom_box', function($column, $post_type) {
 
     <?php
 }, 10, 2);
+
