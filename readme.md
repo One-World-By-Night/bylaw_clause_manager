@@ -59,9 +59,9 @@ A shortcode `[render_bylaws group="character"]` renders clauses by group:
 
 ---
 
-### 4. Tag-Based Filtering with Select2
-Above the clause tree is a dynamic multi-select tag filter:
-- Uses Select2 for a searchable dropdown of all tags in use
+### 4. Content-Based Filtering
+Above the clause tree is a dynamic content filter:
+- Uses content for a searchable dropdown of all tags in use
 - Enables filtering by terms like `anarch`, `caitiff`, etc.
 - Includes a **“Clear Filters”** button
 - Ensures:
@@ -119,3 +119,8 @@ From https://www.owbn.net/bylaws/character, we can model this clause structure:
 - All ancestor clauses are shown, even if they aren’t tagged
 - Any clause tagged `always` is visible regardless of filters
 - “Clear Filters” returns the full hierarchy to view
+
+## Versions
+### 2.2.4
+- Transition to content filters  
+- Update js and render for content filters  

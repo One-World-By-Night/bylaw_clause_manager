@@ -2,7 +2,7 @@
 
 /** File: includes/admin/metabox.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.2
+ * @version 2.2.4
  * @author greghacke
  * Function: Register and render the Bylaw Clause metabox in the admin area
  */
@@ -43,16 +43,9 @@ function bcm_render_clause_metabox($post) {
     $vote_url  = get_post_meta($post->ID, 'vote_url', true);
 
     $groups = bcm_get_bylaw_groups();
-    $clauses = get_posts([
-        'post_type'      => 'bylaw_clause',
-        'posts_per_page' => -1,
-        'post_status'    => ['publish', 'draft', 'pending', 'private'],
-        'orderby'        => 'title',
-        'order'          => 'ASC',
-    ]);
-
+    
     echo '<p><label><strong>' . esc_html__('Bylaw Group', 'bylaw-clause-manager') . '</strong><br />';
-    echo '<select name="bcm_bylaw_group" style="width:100%;">';
+    echo '<select name="bcm_bylaw_group" id="bcm_bylaw_group" style="width:100%;">';
     echo '<option value="">' . esc_html__('— Select —', 'bylaw-clause-manager') . '</option>';
     foreach ($groups as $key => $label) {
         printf(
@@ -67,19 +60,77 @@ function bcm_render_clause_metabox($post) {
     echo '<p><label><strong>' . esc_html__('Parent Clause', 'bylaw-clause-manager') . '</strong><br />';
     echo '<select name="bcm_parent_clause" id="bcm_parent_clause" class="bcm-parent-select" style="width:100%;">';
     echo '<option value="">' . esc_html__('— None —', 'bylaw-clause-manager') . '</option>';
-    foreach ($clauses as $clause) {
-        if ($clause->ID == $post->ID) continue; // Avoid self-parenting
-        $title   = get_the_title($clause);
-        $snippet = mb_substr(wp_strip_all_tags($clause->post_content), 0, 30);
-        printf(
-            '<option value="%s"%s>%s – %s</option>',
-            esc_attr($clause->ID),
-            selected($parent, $clause->ID, false),
-            esc_html($title),
-            esc_html($snippet)
-        );
+    
+    // Only fetch clauses if a group is selected
+    if (!empty($group)) {
+        $clauses = get_posts([
+            'post_type'      => 'bylaw_clause',
+            'posts_per_page' => -1,
+            'post_status'    => ['publish', 'draft', 'pending', 'private'],
+            'orderby'        => 'title',
+            'order'          => 'ASC',
+            'meta_query'     => [
+                [
+                    'key'     => 'bylaw_group',
+                    'value'   => $group,
+                    'compare' => '='
+                ]
+            ]
+        ]);
+        
+        foreach ($clauses as $clause) {
+            if ($clause->ID == $post->ID) continue; // Avoid self-parenting
+            $title   = get_the_title($clause);
+            $snippet = mb_substr(wp_strip_all_tags($clause->post_content), 0, 30);
+            printf(
+                '<option value="%s"%s>%s – %s</option>',
+                esc_attr($clause->ID),
+                selected($parent, $clause->ID, false),
+                esc_html($title),
+                esc_html($snippet)
+            );
+        }
     }
+    
     echo '</select></label></p>';
+
+    // Add script to update parent options when group changes
+    echo '<script>
+    jQuery(document).ready(function($) {
+        $("#bcm_bylaw_group").on("change", function() {
+            var group = $(this).val();
+            var currentParent = "' . esc_js($parent) . '";
+            var postId = ' . (int)$post->ID . ';
+            
+            $.post(ajaxurl, {
+                action: "bcm_get_group_clauses",
+                group: group,
+                current_post: postId,
+                nonce: "' . wp_create_nonce('bcm_ajax_nonce') . '"
+            }, function(response) {
+                var select = $("#bcm_parent_clause");
+                select.empty().append(\'<option value="">— None —</option>\');
+                
+                if (response.success && response.data) {
+                    $.each(response.data, function(i, clause) {
+                        select.append($(\'<option>\').val(clause.id).text(clause.title + " – " + clause.snippet));
+                    });
+                    
+                    // Restore previous selection if it exists in new options
+                    if (currentParent && select.find(\'option[value="\' + currentParent + \'"]\').length) {
+                        select.val(currentParent);
+                    }
+                }
+                
+                // Reinitialize Select2 if needed
+                if (select.hasClass("select2-hidden-accessible")) {
+                    select.select2("destroy");
+                }
+                select.select2({ width: "100%" });
+            });
+        });
+    });
+    </script>';
 
     echo '<p><label><strong>' . esc_html__('Section ID', 'bylaw-clause-manager') . '</strong><br />';
     echo '<input type="text" name="bcm_section_id" value="' . esc_attr($section_id) . '" style="width:100%;" /></label></p>';

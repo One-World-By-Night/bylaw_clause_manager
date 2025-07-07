@@ -103,6 +103,8 @@ Plugin Setup:
 **Tip**: Match the WordPress post title to the machine-readable Section ID (e.g., `2_g_i_3`) for easier referencing and maintenance.
 
 == Changelog ==
+= 2.2.4 =
+* Transition filter to content-based (vice tag based)
 
 = 2.0.0 =
 * First public release

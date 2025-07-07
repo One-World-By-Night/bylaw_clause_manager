@@ -2,7 +2,7 @@
 
 /** File: includes/shortcodes/listing.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.2
+ * @version 2.2.4
  * @author greghacke
  * Function: Shortcodes for rendering Bylaw Clauses
  */
@@ -50,8 +50,8 @@ add_shortcode('render_bylaws', function($atts) {
     }
 
     echo '<div id="bcm-toolbar"><!-- #bcm-toolbar -->';
-    echo '  <label for="bcm-tag-select">' . esc_html__('Filter by Tag:', 'bylaw-clause-manager') . '</label>';
-    echo '  <select id="bcm-tag-select" multiple style="width: 300px;"></select>';
+    echo '  <label for="bcm-content-filter">' . esc_html__('Filter by Content:', 'bylaw-clause-manager') . '</label>';
+    echo '  <input type="text" id="bcm-content-filter" placeholder="' . esc_attr__('Type to search...', 'bylaw-clause-manager') . '" style="width: 300px;" />';
     echo '  <button type="button" onclick="bcmClearFilters()">' . esc_html__('Clear Filters', 'bylaw-clause-manager') . '</button>';
     echo '  <button type="button" onclick="window.print()">' . esc_html__('Print / Export PDF', 'bylaw-clause-manager') . '</button>';
     echo '</div><!-- #bcm-toolbar -->';

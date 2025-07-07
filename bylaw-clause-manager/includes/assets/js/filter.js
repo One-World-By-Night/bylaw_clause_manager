@@ -63,6 +63,35 @@ jQuery(function ($) {
     $editRow.find('select[name="bcm_qe_parent_clause"]').val(parent).trigger('change');
     $editRow.find('select[name="bcm_qe_bylaw_group"]').val(group).trigger('change');
 
+    // Filter parent options based on selected group
+    $editRow.find('select[name="bcm_qe_bylaw_group"]').on('change', function() {
+      const selectedGroup = $(this).val();
+      const $parentSelect = $editRow.find('select[name="bcm_qe_parent_clause"]');
+      
+      // Hide all optgroups first
+      $parentSelect.find('optgroup').hide();
+      
+      // Show only the matching group
+      if (selectedGroup) {
+        $parentSelect.find('optgroup[data-group="' + selectedGroup + '"]').show();
+      }
+      
+      // Reset selection if current parent is not in the group
+      const currentVal = $parentSelect.val();
+      if (currentVal && !$parentSelect.find('option[value="' + currentVal + '"]:visible').length) {
+        $parentSelect.val('');
+      }
+      
+      // Refresh Select2
+      if ($parentSelect.hasClass('select2-hidden-accessible')) {
+        $parentSelect.select2('destroy');
+        $parentSelect.select2({ width: '100%' });
+      }
+    });
+
+    // Trigger change to filter on load
+    $editRow.find('select[name="bcm_qe_bylaw_group"]').trigger('change');
+
     // Init Select2 on dropdowns
     $editRow.find('select').each(function () {
       if ($.fn.select2) {
@@ -110,53 +139,128 @@ jQuery(function ($) {
   }, 100);
 });
 
-// ── Frontend Tag Filtering for [render_bylaws] ──
+// ── Frontend Content Filtering for [render_bylaws] ──
 document.addEventListener('DOMContentLoaded', () => {
+  const filterInput = document.getElementById('bcm-content-filter');
+  if (!filterInput) return;
+
   const clauses = document.querySelectorAll('.bylaw-clause');
-  const tagSet = new Set();
-
+  const clausesById = {};
+  
   clauses.forEach(clause => {
-    clause.classList.forEach(cls => {
-      if (cls !== 'bylaw-clause') tagSet.add(cls);
+    clausesById[clause.dataset.id] = clause;
+  });
+
+  function highlightText(element, searchTerm) {
+    // Remove existing highlights
+    element.querySelectorAll('.bcm-highlight').forEach(span => {
+      const parent = span.parentNode;
+      parent.replaceChild(document.createTextNode(span.textContent), span);
+      parent.normalize();
     });
-  });
 
-  const select = document.getElementById('bcm-tag-select');
-  if (!select) return;
+    if (!searchTerm) return;
 
-  tagSet.forEach(tag => {
-    const option = document.createElement('option');
-    option.value = tag;
-    option.textContent = tag.charAt(0).toUpperCase() + tag.slice(1);
-    select.appendChild(option);
-  });
+    // Find all text nodes
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function(node) {
+          // Skip empty nodes and nodes inside script/style
+          if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
+          if (node.parentElement.tagName === 'SCRIPT' || 
+              node.parentElement.tagName === 'STYLE') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
 
-  jQuery(select).select2({
-    placeholder: 'Filter by tag',
-    width: 'resolve'
-  });
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+      textNodes.push(node);
+    }
 
-  function applyFilter(selected) {
+    // Highlight matches in text nodes
+    textNodes.forEach(textNode => {
+      const text = textNode.textContent;
+      const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      
+      if (regex.test(text)) {
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+        let match;
+
+        regex.lastIndex = 0;
+        while ((match = regex.exec(text)) !== null) {
+          // Add text before match
+          if (match.index > lastIndex) {
+            fragment.appendChild(
+              document.createTextNode(text.slice(lastIndex, match.index))
+            );
+          }
+
+          // Add highlighted match
+          const span = document.createElement('span');
+          span.className = 'bcm-highlight';
+          span.textContent = match[1];
+          fragment.appendChild(span);
+
+          lastIndex = match.index + match[1].length;
+        }
+
+        // Add remaining text
+        if (lastIndex < text.length) {
+          fragment.appendChild(
+            document.createTextNode(text.slice(lastIndex))
+          );
+        }
+
+        textNode.parentNode.replaceChild(fragment, textNode);
+      }
+    });
+  }
+
+  function applyFilter() {
+    const searchTerm = filterInput.value.toLowerCase().trim();
     const showIds = new Set();
-    const clausesById = {};
+
+    // First, clear all highlights if search is empty
+    if (searchTerm === '') {
+      clauses.forEach(clause => {
+        const textElement = clause.querySelector('.bylaw-label-text');
+        if (textElement) {
+          highlightText(textElement, '');
+        }
+      });
+    }
 
     clauses.forEach(clause => {
-      const id = clause.dataset.id;
-      clausesById[id] = clause;
-
-      const classes = Array.from(clause.classList);
-      const tags = classes.filter(cls => cls !== 'bylaw-clause');
-
-      const hasAlways = tags.includes('always');
-      const matchesFilter = selected.some(tag => tags.includes(tag));
-
-      if (hasAlways || matchesFilter || selected.length === 0) {
-        showIds.add(id);
+      const content = clause.dataset.content || '';
+      const textElement = clause.querySelector('.bylaw-label-text');
+      
+      if (searchTerm === '' || content.includes(searchTerm)) {
+        showIds.add(clause.dataset.id);
+        
+        // Only highlight if there's a search term and it matches
+        if (textElement && searchTerm && content.includes(searchTerm)) {
+          highlightText(textElement, searchTerm);
+        }
+        
+        // Show all ancestors
         let current = clause;
         while (current && current.dataset.parent && current.dataset.parent !== '0') {
           const parentId = current.dataset.parent;
           showIds.add(parentId);
           current = clausesById[parentId];
+        }
+      } else {
+        // Remove highlights from non-matching elements
+        if (textElement) {
+          highlightText(textElement, '');
         }
       }
     });
@@ -166,17 +270,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  jQuery(select).on('change', () => {
-    const selected = jQuery(select).val() || [];
-    applyFilter(selected);
-  });
+  filterInput.addEventListener('input', applyFilter);
 });
 
 // ── Global Helper to Clear Filters ──
 function bcmClearFilters() {
-  const select = document.getElementById('bcm-tag-select');
-  if (select && jQuery(select).select2) {
-    jQuery(select).val(null).trigger('change');
+  const filterInput = document.getElementById('bcm-content-filter');
+  if (filterInput) {
+    filterInput.value = '';
+    filterInput.dispatchEvent(new Event('input'));
   }
 }
 

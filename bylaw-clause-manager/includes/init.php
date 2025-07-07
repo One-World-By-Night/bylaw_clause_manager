@@ -2,7 +2,7 @@
 
 /** File: includes/init.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.2
+ * @version 2.2.4
  * @author greghacke
  * Function:  Porvide a single entry point to load all plugin components in standard and class-based structure
  */

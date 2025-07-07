@@ -2,7 +2,7 @@
 
 /** File: includes/core/authorization.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.2
+ * @version 2.2.4
  * @author greghacke
  * Function: Select authorization functionality for the plugin using core functions or accessSchema-client
  */

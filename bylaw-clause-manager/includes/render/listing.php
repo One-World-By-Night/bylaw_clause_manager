@@ -2,7 +2,7 @@
 
 /** File: includes/render/listing.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.2
+ * @version 2.2.4
  * @author author
  * Function: Generate a hierarchical tree structure of Bylaw Clauses.
  */
@@ -48,24 +48,20 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
     foreach ($clauses as $clause) {
         $section      = get_post_meta($clause->ID, 'section_id', true);
         $content      = $clause->post_content;
-        $tags         = get_post_meta($clause->ID, 'tags', true);
         $parent       = get_post_meta($clause->ID, 'parent_clause', true);
 
-        // Build vote tooltip using your existing function
+        // Build vote tooltip
         $vote_marker = bcm_generate_vote_tooltip($clause->ID);
 
         if ((int)$clause->ID === (int)$parent) continue;
 
-        $class_string = '';
-        if (!empty($tags)) {
-            $tag_array = array_map('trim', explode(',', strtolower($tags)));
-            $class_string = implode(' ', array_map('sanitize_html_class', $tag_array));
-        }
-
         $anchor_id = sanitize_title($section ?: $clause->ID);
         $margin    = 20 * (int)$depth;
 
-        echo "\n" . '<div class="bylaw-clause ' . esc_attr($class_string) . '" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ?: 0) . '" style="margin-left:' . esc_attr($margin) . 'px;">';
+        // Store content in data attribute for searching
+        $search_content = wp_strip_all_tags($content);
+        
+        echo "\n" . '<div class="bylaw-clause" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ?: 0) . '" data-content="' . esc_attr(strtolower($search_content)) . '" style="margin-left:' . esc_attr($margin) . 'px;">';
         echo "\n  <div class=\"bylaw-label-wrap\">";
         echo "\n    <div class=\"bylaw-label-text\">";
 

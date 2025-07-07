@@ -2,7 +2,7 @@
 
 /** File: includes/admin/enqueue.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.2
+ * @version 2.2.4
  * @author greghacke
  * Function: Handles enqueuing of scripts and styles for Bylaw Clause Manager
  */

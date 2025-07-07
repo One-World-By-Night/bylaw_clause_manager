@@ -2,7 +2,7 @@
 
 /** File: includes/render/admin.php
  * Text Domain: bylaw-clause-manager
- * @version 2.1.2
+ * @version 2.2.4
  * @author greghacke
  * Function: 
  */
@@ -198,16 +198,16 @@ add_action('quick_edit_custom_box', function($column, $post_type) {
             <!-- Parent Clause Dropdown (grouped by Bylaw Group) -->
             <label style="display:block; margin-top: 10px;">
                 <span class="title"><?php esc_html_e('Parent Clause', 'bylaw-clause-manager'); ?></span>
-                <select name="bcm_qe_parent_clause" class="bcm-qe-parent" style="width:100%;">
+                <select name="bcm_qe_parent_clause" class="bcm-qe-parent" style="width:100%;" data-post-id="">
                     <option value=""><?php esc_html_e('— None —', 'bylaw-clause-manager'); ?></option>
                     <?php foreach ($grouped_clauses as $group_key => $clauses): ?>
-                        <optgroup label="<?php echo esc_attr($groups[$group_key] ?? ucfirst($group_key)); ?>" data-group="<?php echo esc_attr($group_key); ?>">
+                        <optgroup label="<?php echo esc_attr($groups[$group_key] ?? ucfirst($group_key)); ?>" data-group="<?php echo esc_attr($group_key); ?>" style="display:none;">
                             <?php foreach ($clauses as $clause): ?>
                                 <?php
                                 $title   = get_the_title($clause);
-                                $content = wp_strip_all_tags($clause->post_content); // ← FIXED
+                                $content = wp_strip_all_tags($clause->post_content);
                                 $snippet = mb_substr($content, 0, 30);
-                                $label   = $title . ' ' . $snippet;
+                                $label   = $title . ' – ' . $snippet;
                                 ?>
                                 <option value="<?php echo esc_attr($clause->ID); ?>">
                                     <?php echo esc_html($label); ?>
