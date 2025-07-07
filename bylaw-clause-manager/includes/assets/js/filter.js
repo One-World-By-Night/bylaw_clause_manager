@@ -59,14 +59,21 @@ jQuery(function ($) {
       parent
     });
 
+    // Set values
     $editRow.find('input[name="bcm_qe_tags"]').val(tags);
-    $editRow.find('select[name="bcm_qe_parent_clause"]').val(parent).trigger('change');
-    $editRow.find('select[name="bcm_qe_bylaw_group"]').val(group).trigger('change');
-
-    // Filter parent options based on selected group
-    $editRow.find('select[name="bcm_qe_bylaw_group"]').on('change', function() {
+    
+    // Set bylaw group FIRST
+    const $groupSelect = $editRow.find('select[name="bcm_qe_bylaw_group"]');
+    const $parentSelect = $editRow.find('select[name="bcm_qe_parent_clause"]');
+    
+    // Remove any existing change handlers to avoid duplicates
+    $groupSelect.off('change.bcmfilter');
+    
+    // Add the change handler
+    $groupSelect.on('change.bcmfilter', function() {
       const selectedGroup = $(this).val();
-      const $parentSelect = $editRow.find('select[name="bcm_qe_parent_clause"]');
+      
+      console.log('Group changed to:', selectedGroup);
       
       // Hide all optgroups first
       $parentSelect.find('optgroup').hide();
@@ -76,28 +83,43 @@ jQuery(function ($) {
         $parentSelect.find('optgroup[data-group="' + selectedGroup + '"]').show();
       }
       
-      // Reset selection if current parent is not in the group
-      const currentVal = $parentSelect.val();
-      if (currentVal && !$parentSelect.find('option[value="' + currentVal + '"]:visible').length) {
-        $parentSelect.val('');
-      }
+      // Store current parent value
+      const currentParent = $parentSelect.val();
       
-      // Refresh Select2
+      // Refresh Select2 if active
       if ($parentSelect.hasClass('select2-hidden-accessible')) {
         $parentSelect.select2('destroy');
-        $parentSelect.select2({ width: '100%' });
+      }
+      
+      // Re-init Select2 with filtered options
+      $parentSelect.select2({ 
+        width: '100%',
+        placeholder: 'Select Parent Clause',
+        allowClear: true
+      });
+      
+      // Restore parent value if still valid
+      if (currentParent && $parentSelect.find('option[value="' + currentParent + '"]:visible').length) {
+        $parentSelect.val(currentParent).trigger('change');
+      } else {
+        $parentSelect.val('').trigger('change');
       }
     });
 
-    // Trigger change to filter on load
-    $editRow.find('select[name="bcm_qe_bylaw_group"]').trigger('change');
+    // Set the group value and trigger change
+    $groupSelect.val(group);
+    $groupSelect.trigger('change.bcmfilter');
+    
+    // THEN set parent value after group filtering is done
+    setTimeout(() => {
+      if (parent && $parentSelect.find('option[value="' + parent + '"]').parent(':visible').length) {
+        $parentSelect.val(parent).trigger('change');
+      }
+    }, 100);
 
-    // Init Select2 on dropdowns
+    // Init Select2 on all selects
     $editRow.find('select').each(function () {
-      if ($.fn.select2) {
-        if ($(this).hasClass('select2-hidden-accessible')) {
-          $(this).select2('destroy');
-        }
+      if ($.fn.select2 && !$(this).hasClass('select2-hidden-accessible')) {
         $(this).select2({ width: '100%' });
       }
     });
