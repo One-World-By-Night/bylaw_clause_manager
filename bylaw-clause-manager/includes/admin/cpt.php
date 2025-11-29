@@ -2,7 +2,7 @@
 
 /** File: includes/admin/enqueue.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Create the custom post type for bylaw clauses
  */
@@ -15,7 +15,8 @@ defined('ABSPATH') || exit;
  * It supports titles, editors, and revisions, and is shown in the REST API.
  * The post type is public and has a custom rewrite rule that includes the bylaw group in the URL.
  */
-function bcm_register_bylaw_clause_cpt() {
+function bcm_register_bylaw_clause_cpt()
+{
     register_post_type('bylaw_clause', [
         'labels' => [
             'name'          => esc_html__('Bylaw Clauses', 'bylaw-clause-manager'),
@@ -39,7 +40,8 @@ add_action('init', 'bcm_register_bylaw_clause_cpt');
  * It uses the 'bylaw_group' custom field to create a more descriptive URL.
  * The URL format is: /bylaw-clause/{group}/{slug}/
  */
-function bcm_custom_bylaw_permalink($post_link, $post) {
+function bcm_custom_bylaw_permalink($post_link, $post)
+{
     if ($post->post_type !== 'bylaw_clause') return $post_link;
 
     $group = get_post_meta($post->ID, 'bylaw_group', true);
@@ -56,7 +58,8 @@ add_filter('post_type_link', 'bcm_custom_bylaw_permalink', 10, 2);
  * It allows the URL structure to include the bylaw group and the clause slug.
  * 
  */
-function bcm_custom_rewrite_rules() {
+function bcm_custom_rewrite_rules()
+{
     add_rewrite_rule(
         '^bylaw-clause/([^/]+)/([^/]+)/?$',
         'index.php?post_type=bylaw_clause&name=$matches[2]',

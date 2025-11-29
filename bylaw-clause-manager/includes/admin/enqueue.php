@@ -2,7 +2,7 @@
 
 /** File: includes/admin/enqueue.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Handles enqueuing of scripts and styles for Bylaw Clause Manager
  */
@@ -12,7 +12,8 @@ defined('ABSPATH') || exit;
 /** Enqueue admin scripts and styles for Bylaw Clause admin pages.
  * Includes Select2, filter.js, and custom styling.
  */
-function bcm_admin_enqueue_assets($hook) {
+function bcm_admin_enqueue_assets($hook)
+{
     // $allowed_hooks = [
     //     'edit.php',
     //     'post.php',
@@ -39,7 +40,8 @@ add_action('admin_enqueue_scripts', 'bcm_admin_enqueue_assets');
 /** Enqueue frontend scripts and styles for Bylaw Clause listing shortcode.
  * Includes Select2, filter.js, and custom styling.
  */
-function bcm_enqueue_assets() {
+function bcm_enqueue_assets()
+{
     $base_url  = plugin_dir_url(__DIR__) . 'assets/';
     $base_path = plugin_dir_path(__DIR__) . 'assets/';
 

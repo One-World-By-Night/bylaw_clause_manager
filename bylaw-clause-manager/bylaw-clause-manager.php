@@ -1,10 +1,11 @@
 <?php
+
 /**
  * Plugin Name: Bylaw Clause Manager
  * Text Domain: bylaw-clause-manager
  * Plugin URI: https://www.github.com/One-World-By-Night/bylaw-clause-manager
  * Description: Short description of the plugin functionality.
- * Version: 2.2.4
+ * Version: 2.3.0
  * Author: greghacke
  * Contributors: greghacke
  * Author URI: https://www.github.com/One-World-By-Night
@@ -14,6 +15,6 @@
  * GitHub Branch: main
  */
 
- defined('ABSPATH') || exit;
+defined('ABSPATH') || exit;
 
 require_once __DIR__ . '/includes/init.php';

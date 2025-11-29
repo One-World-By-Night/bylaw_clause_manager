@@ -2,12 +2,12 @@
 
 /** File: includes/render/listing.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author author
  * Function: Generate a hierarchical tree structure of Bylaw Clauses.
  */
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /** Renders the Bylaw Clause tree structure recursively.
  * This function retrieves all Bylaw Clauses from the database, ordered by their sequence.
@@ -15,7 +15,8 @@ defined( 'ABSPATH' ) || exit;
  * The function supports depth control, allowing it to render nested clauses up to a specified depth.
  * It also supports filtering by Bylaw Group if specified.
  */
-function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
+function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null)
+{
     $meta_query = [];
 
     if ($parent_id === 0) {
@@ -39,7 +40,7 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
         'numberposts' => -1,
     ]);
 
-    usort($clauses, function($a, $b) {
+    usort($clauses, function ($a, $b) {
         return bcm_title_sort_key($a->post_title) <=> bcm_title_sort_key($b->post_title);
     });
 
@@ -60,7 +61,7 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
 
         // Store content in data attribute for searching
         $search_content = wp_strip_all_tags($content);
-        
+
         echo "\n" . '<div class="bylaw-clause" id="clause-' . esc_attr($anchor_id) . '" data-id="' . esc_attr($clause->ID) . '" data-parent="' . esc_attr($parent ?: 0) . '" data-content="' . esc_attr(strtolower($search_content)) . '" style="margin-left:' . esc_attr($margin) . 'px;">';
         echo "\n  <div class=\"bylaw-label-wrap\">";
         echo "\n    <div class=\"bylaw-label-text\">";
@@ -89,7 +90,8 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null) {
  * The tooltip is returned as a span element with the class 'vote-tooltip', which can be styled with CSS.
  * If no vote information is available, an empty string is returned.
  */
-function bcm_generate_vote_tooltip($clause_id) {
+function bcm_generate_vote_tooltip($clause_id)
+{
     $vote_date = get_post_meta($clause_id, 'vote_date', true);
     $vote_ref  = get_post_meta($clause_id, 'vote_reference', true);
     $vote_url  = get_post_meta($clause_id, 'vote_url', true);

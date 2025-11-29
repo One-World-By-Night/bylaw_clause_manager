@@ -2,12 +2,12 @@
 
 /** File: includes/hooks/init.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Init hooks functionality for the plugin
  */
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /** --- Require each hooks file once --- */
 require_once __DIR__ . '/filters.php';

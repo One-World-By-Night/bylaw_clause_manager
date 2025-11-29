@@ -2,16 +2,16 @@
 
 /** File: includes/core/bootstrap.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Bootstrap the core functionality of the Bylaw Clause Manager plugin
  */
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 // Define constants for the plugin
 define('WPPLUGINNAME_PATH', plugin_dir_path(__FILE__) . '../');
 define('WPPLUGINNAME_URL', plugin_dir_url(__FILE__) . '../');
 
 // Define the plugin version
-define('WPPLUGINNAME_VERSION', '2.2.4');
+define('WPPLUGINNAME_VERSION', '2.3.0');

@@ -2,12 +2,12 @@
 
 /** File: includes/shortcodes/listing.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Shortcodes for rendering Bylaw Clauses
  */
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /** Renders the Bylaw Clause listing shortcode.
  * This shortcode displays a list of Bylaw Clauses, allowing users to filter by tags and print/export the list.
@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  * The shortcode can be used in posts or pages with the format:
  *      [render_bylaws group="group-slug"]
  */
-add_shortcode('render_bylaws', function($atts) {
+add_shortcode('render_bylaws', function ($atts) {
     $atts = shortcode_atts(['group' => null], $atts);
     ob_start();
 

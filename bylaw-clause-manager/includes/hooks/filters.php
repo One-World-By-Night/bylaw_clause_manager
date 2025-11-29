@@ -2,19 +2,19 @@
 
 /** File: includes/hooks/filters.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Filters for the Bylaw Clause Manager plugin.
  */
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /** Makes custom columns sortable in the Bylaw Clause CPT list view.
  * This function registers the custom columns ('bylaw_group', 'parent_clause', and 'short_content') as sortable.
  * This allows users to sort the list table by these columns, enhancing the usability of the admin interface.
  * The sorting functionality is handled by WordPress, which will query the database based on the column names.
  */
-add_filter('manage_edit-bylaw_clause_sortable_columns', function($columns) {
+add_filter('manage_edit-bylaw_clause_sortable_columns', function ($columns) {
     $columns['bylaw_group']   = 'bylaw_group';
     $columns['parent_clause'] = 'parent_clause';
     $columns['short_content'] = 'short_content';
@@ -44,7 +44,7 @@ $title = is_string($title_raw) ? sanitize_text_field(wp_unslash($title_raw)) : '
  * If the nonce is valid, it applies a meta query to filter by the specified Bylaw Group and title.
  * If no specific order is set, it defaults to sorting by title in ascending order.
  */
-add_action('pre_get_posts', function($query) use ($nonce, $group, $title) {
+add_action('pre_get_posts', function ($query) use ($nonce, $group, $title) {
     if (!is_admin() || !$query->is_main_query()) return;
 
     $orderby = $query->get('orderby');
@@ -90,7 +90,7 @@ add_action('pre_get_posts', function($query) use ($nonce, $group, $title) {
 /** Custom search filter for Bylaw Clause CPT in admin.
  * This function modifies the search query for the Bylaw Clause custom post type in the WordPress admin.
  */
-add_filter('posts_search', function($search, $wp_query) {
+add_filter('posts_search', function ($search, $wp_query) {
     global $wpdb;
 
     if (!is_admin() || !$wp_query->is_main_query()) return $search;

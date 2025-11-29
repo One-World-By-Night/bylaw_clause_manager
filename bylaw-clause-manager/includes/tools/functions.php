@@ -2,12 +2,12 @@
 
 /** File: includes/tools/functions.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Tools functions for the Bylaw Clause Manager plugin
  */
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /** Normalizes a clause title by converting it to lowercase and replacing dots with underscores.
  * Used for consistent matching of clause hierarchy regardless of format.
@@ -15,14 +15,16 @@ defined( 'ABSPATH' ) || exit;
  * @param string $title
  * @return string
  */
-function bcm_normalize_clause_title($title) {
+function bcm_normalize_clause_title($title)
+{
     return strtolower(str_replace('.', '_', $title));
 }
 
 /** Fixes the parent_clause meta field based on post title hierarchy.
  * Supports both underscore (_) and dot (.) formats in post titles.
  */
-function bcm_fix_clause_parents() {
+function bcm_fix_clause_parents()
+{
     $posts = get_posts([
         'post_type'   => 'bylaw_clause',
         'numberposts' => -1,
@@ -67,7 +69,8 @@ function bcm_fix_clause_parents() {
  * This function generates a sort key array based on the hierarchical parts of the title.
  * It supports numeric, single-letter, and Roman numeral components.
  */
-function bcm_title_sort_key($title) {
+function bcm_title_sort_key($title)
+{
     if (!$title) return [999999];
 
     $parts = preg_split('/[\.\-_]/', strtoupper(trim($title)));
@@ -109,7 +112,8 @@ function bcm_title_sort_key($title) {
  * @param string $seq
  * @return int
  */
-function bcm_sequence_to_int($seq) {
+function bcm_sequence_to_int($seq)
+{
     if (!$seq) return 999999;
 
     $seq = trim($seq);
@@ -138,17 +142,29 @@ function bcm_sequence_to_int($seq) {
  * It handles both uppercase and lowercase letters, and trims whitespace.
  * It uses a mapping of Roman numeral symbols to their integer values.
  */
-function bcm_roman_to_int($roman) {
+function bcm_roman_to_int($roman)
+{
     $roman = strtoupper(trim($roman));
     if (!$roman) return false;
 
     $map = [
-        'M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400,
-        'C' => 100, 'XC' => 90, 'L' => 50, 'XL' => 40,
-        'X' => 10, 'IX' => 9, 'V' => 5, 'IV' => 4, 'I' => 1,
+        'M' => 1000,
+        'CM' => 900,
+        'D' => 500,
+        'CD' => 400,
+        'C' => 100,
+        'XC' => 90,
+        'L' => 50,
+        'XL' => 40,
+        'X' => 10,
+        'IX' => 9,
+        'V' => 5,
+        'IV' => 4,
+        'I' => 1,
     ];
 
-    $i = 0; $value = 0;
+    $i = 0;
+    $value = 0;
     while ($i < strlen($roman)) {
         if ($i + 1 < strlen($roman) && isset($map[substr($roman, $i, 2)])) {
             $value += $map[substr($roman, $i, 2)];
@@ -168,7 +184,8 @@ function bcm_roman_to_int($roman) {
  * This function supports integers from 1 to 3999, as Roman numerals are not typically used for larger numbers.
  * It returns false for out-of-range values or non-integer inputs.
  */
-function bcm_int_to_roman($number) {
+function bcm_int_to_roman($number)
+{
     if (!is_int($number) || $number <= 0 || $number > 3999) {
         return false; // Out of standard Roman numeral range
     }
@@ -207,7 +224,8 @@ function bcm_int_to_roman($number) {
  * It also includes styles for vote tooltips and their content.
  * The styles are designed to be minimal and functional, ensuring a clean and user-friendly interface.
  */
-function bcm_get_inline_styles() {
+function bcm_get_inline_styles()
+{
     $css = '';
 
     $css .= "#bcm-toolbar{margin-bottom:1em;display:flex;align-items:center;gap:0.75em;flex-wrap:wrap;}";
@@ -228,4 +246,3 @@ function bcm_get_inline_styles() {
 
     return $css;
 }
-

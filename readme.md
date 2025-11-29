@@ -121,6 +121,6 @@ From https://www.owbn.net/bylaws/character, we can model this clause structure:
 - “Clear Filters” returns the full hierarchy to view
 
 ## Versions
-### 2.2.4
+### 2.3.0
 - Transition to content filters  
 - Update js and render for content filters  

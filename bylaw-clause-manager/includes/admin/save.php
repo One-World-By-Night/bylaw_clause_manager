@@ -2,7 +2,7 @@
 
 /** File: includes/admin/save.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Save post meta for the Bylaw Clause CPT
  */
@@ -17,7 +17,7 @@ defined('ABSPATH') || exit;
  * The function uses `sanitize_key`, `sanitize_text_field`, and `esc_url_raw` to ensure the data is clean and safe before saving.
  * It also checks if the post type is 'bylaw_clause' to ensure it only processes relevant posts.
  */
-add_action('save_post_bylaw_clause', function($post_id) {
+add_action('save_post_bylaw_clause', function ($post_id) {
     if (
         defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ||
         !isset($_POST['bcm_clause_meta_nonce']) ||
@@ -52,7 +52,7 @@ add_action('save_post_bylaw_clause', function($post_id) {
  * The function uses `sanitize_key`, `sanitize_text_field`, and `esc_url_raw` to ensure the data is clean and safe before saving.
  * It also checks if the post type is 'bylaw_clause' to ensure it only processes relevant posts.
  */
-add_action('save_post_bylaw_clause', function($post_id) {
+add_action('save_post_bylaw_clause', function ($post_id) {
     if (
         defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ||
         wp_is_post_revision($post_id) ||

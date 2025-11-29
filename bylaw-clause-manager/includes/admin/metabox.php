@@ -2,7 +2,7 @@
 
 /** File: includes/admin/metabox.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Register and render the Bylaw Clause metabox in the admin area
  */
@@ -31,7 +31,8 @@ add_action('add_meta_boxes', function () {
  *
  * @param WP_Post $post
  */
-function bcm_render_clause_metabox($post) {
+function bcm_render_clause_metabox($post)
+{
     wp_nonce_field('bcm_clause_meta_save', 'bcm_clause_meta_nonce');
 
     $group     = get_post_meta($post->ID, 'bylaw_group', true);
@@ -43,7 +44,7 @@ function bcm_render_clause_metabox($post) {
     $vote_url  = get_post_meta($post->ID, 'vote_url', true);
 
     $groups = bcm_get_bylaw_groups();
-    
+
     echo '<p><label><strong>' . esc_html__('Bylaw Group', 'bylaw-clause-manager') . '</strong><br />';
     echo '<select name="bcm_bylaw_group" id="bcm_bylaw_group" style="width:100%;">';
     echo '<option value="">' . esc_html__('— Select —', 'bylaw-clause-manager') . '</option>';
@@ -60,7 +61,7 @@ function bcm_render_clause_metabox($post) {
     echo '<p><label><strong>' . esc_html__('Parent Clause', 'bylaw-clause-manager') . '</strong><br />';
     echo '<select name="bcm_parent_clause" id="bcm_parent_clause" class="bcm-parent-select" style="width:100%;">';
     echo '<option value="">' . esc_html__('— None —', 'bylaw-clause-manager') . '</option>';
-    
+
     // Only fetch clauses if a group is selected
     if (!empty($group)) {
         $clauses = get_posts([
@@ -77,7 +78,7 @@ function bcm_render_clause_metabox($post) {
                 ]
             ]
         ]);
-        
+
         foreach ($clauses as $clause) {
             if ($clause->ID == $post->ID) continue; // Avoid self-parenting
             $title   = get_the_title($clause);
@@ -91,7 +92,7 @@ function bcm_render_clause_metabox($post) {
             );
         }
     }
-    
+
     echo '</select></label></p>';
 
     // Add script to update parent options when group changes

@@ -2,18 +2,18 @@
 
 /** File: includes/render/admin.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: 
  */
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /** Render the Bylaw Clause CPT admin list table
  * This function modifies the admin list table for the Bylaw Clause custom post type (CPT).
  * It adds custom columns to display additional information such as Bylaw Group, Parent Clause, and a content preview.
  */
-add_filter('manage_bylaw_clause_posts_columns', function($columns) {
+add_filter('manage_bylaw_clause_posts_columns', function ($columns) {
     $new = [];
 
     foreach ($columns as $key => $label) {
@@ -35,17 +35,15 @@ add_filter('manage_bylaw_clause_posts_columns', function($columns) {
  * The content preview is trimmed to approximately 60 characters for better readability.
  * It also embeds Quick Edit data for each post, allowing inline editing of these fields.
  */
-add_action('manage_bylaw_clause_posts_custom_column', function($column, $post_id) {
+add_action('manage_bylaw_clause_posts_custom_column', function ($column, $post_id) {
     $group     = get_post_meta($post_id, 'bylaw_group', true);
     $parent_id = get_post_meta($post_id, 'parent_clause', true);
     $tags      = get_post_meta($post_id, 'tags', true);
 
     if ($column === 'bylaw_group') {
         echo esc_html(ucfirst($group) ?: '—');
-
     } elseif ($column === 'parent_clause') {
         echo $parent_id ? esc_html(get_the_title($parent_id)) : '—';
-
     } elseif ($column === 'short_content') {
         $content = get_post_field('post_content', $post_id);
         $preview = wp_strip_all_tags($content);
@@ -71,7 +69,7 @@ add_action('manage_bylaw_clause_posts_custom_column', function($column, $post_id
  * It ensures that the content is displayed in a single line with ellipsis for overflow.
  * This improves readability and prevents layout issues in the admin list table.
  */
-add_action('admin_head', function() {
+add_action('admin_head', function () {
     echo '<style>
         .column-short_content {
             white-space: nowrap;
@@ -88,7 +86,7 @@ add_action('admin_head', function() {
  * - Title prefix text input
  * - Nonce field for validation
  */
-add_action('restrict_manage_posts', function() {
+add_action('restrict_manage_posts', function () {
     global $typenow;
 
     if ($typenow !== 'bylaw_clause') return;
@@ -145,7 +143,7 @@ add_action('restrict_manage_posts', function() {
  * The Parent Clause dropdown is grouped by Bylaw Group for better organization.
  * The Tags field allows for comma-separated input, making it easy to add or remove tags.
  */
-add_action('quick_edit_custom_box', function($column, $post_type) {
+add_action('quick_edit_custom_box', function ($column, $post_type) {
     if ($post_type !== 'bylaw_clause') return;
     if (!in_array($column, ['tags', 'parent_clause'], true)) return;
 
@@ -171,7 +169,7 @@ add_action('quick_edit_custom_box', function($column, $post_type) {
         $group = get_post_meta($clause->ID, 'bylaw_group', true) ?: 'uncategorized';
         $grouped_clauses[$group][] = $clause;
     }
-    ?>
+?>
 
     <fieldset class="inline-edit-col-right inline-custom-meta">
         <div class="inline-edit-col">
@@ -220,10 +218,10 @@ add_action('quick_edit_custom_box', function($column, $post_type) {
         </div>
     </fieldset>
 
-    <?php
+<?php
 }, 10, 2);
 
-add_action('pre_get_posts', function($query) {
+add_action('pre_get_posts', function ($query) {
     if (!is_admin() || !$query->is_main_query()) return;
 
     global $typenow;

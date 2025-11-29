@@ -2,12 +2,12 @@
 
 /** File: includes/languages/init.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Init languages functionality for the plugin
  */
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /** --- Require each language file once --- */
 // require_once __DIR__ . '/_template.php';

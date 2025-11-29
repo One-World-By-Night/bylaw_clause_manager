@@ -2,12 +2,12 @@
 
 /** File: includes/templates/bylaw-groups.php
  * Text Domain: bylaw-clause-manager
- * @version 2.2.4
+ * @version 2.3.0
  * @author greghacke
  * Function: Rendering logic for Bylaw Groups settings page
  */
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /** Renders the Bylaw Groups settings page in the WordPress admin.
  * This function displays a form for managing Bylaw Groups, allowing users to add, edit, and remove groups.
@@ -16,7 +16,8 @@ defined( 'ABSPATH' ) || exit;
  * The groups are displayed in a table format, with options to add new groups dynamically via JavaScript.
  * The form uses standard WordPress functions for sanitization and escaping to ensure data integrity and security.
  */
-function bcm_render_bylaw_group_settings_page() {
+function bcm_render_bylaw_group_settings_page()
+{
     // Save changes if posted
     if (!empty($_POST['bcm_groups_keys']) && check_admin_referer('bcm_save_groups', 'bcm_nonce')) {
         $keys = array_map('sanitize_key', $_POST['bcm_groups_keys']);
@@ -38,7 +39,7 @@ function bcm_render_bylaw_group_settings_page() {
     // Load saved groups
     $groups = bcm_get_bylaw_groups();
 
-    ?>
+?>
     <div class="wrap">
         <h1>Manage Bylaw Groups</h1>
         <form method="post">
@@ -77,5 +78,5 @@ function bcm_render_bylaw_group_settings_page() {
             <?php submit_button('Save Groups'); ?>
         </form>
     </div>
-    <?php
+<?php
 }
