@@ -292,7 +292,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  filterInput.addEventListener('input', applyFilter);
+  // Trigger on Search button click
+  const searchBtn = document.getElementById('bcm-content-search');
+  if (searchBtn) {
+    searchBtn.addEventListener('click', applyFilter);
+  }
+
+  // Trigger on Enter key press
+  filterInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      applyFilter();
+    }
+  });
 });
 
 // ── Global Helper to Clear Filters ──
@@ -300,7 +312,11 @@ function bcmClearFilters() {
   const filterInput = document.getElementById('bcm-content-filter');
   if (filterInput) {
     filterInput.value = '';
-    filterInput.dispatchEvent(new Event('input'));
+  }
+  // Trigger the search button click to apply empty filter
+  const searchBtn = document.getElementById('bcm-content-search');
+  if (searchBtn) {
+    searchBtn.click();
   }
 }
 

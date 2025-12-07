@@ -80,3 +80,25 @@ body::before {
   background-color: #ffc107;
   color: #000;
 }
+
+/* Print styles - hide toolbar buttons but show search term */
+@media print {
+  #bcm-toolbar button {
+    display: none !important;
+  }
+  
+  #bcm-toolbar label {
+    display: none !important;
+  }
+  
+  #bcm-content-filter {
+    border: none !important;
+    background: transparent !important;
+    font-weight: bold;
+  }
+  
+  #bcm-content-filter:empty,
+  #bcm-content-filter[value=""] {
+    display: none !important;
+  }
+}

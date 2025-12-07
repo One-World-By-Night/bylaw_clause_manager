@@ -51,7 +51,8 @@ add_shortcode('render_bylaws', function ($atts) {
 
     echo '<div id="bcm-toolbar"><!-- #bcm-toolbar -->';
     echo '  <label for="bcm-content-filter">' . esc_html__('Filter by Content:', 'bylaw-clause-manager') . '</label>';
-    echo '  <input type="text" id="bcm-content-filter" placeholder="' . esc_attr__('Type to search...', 'bylaw-clause-manager') . '" style="width: 300px;" />';
+    echo '  <input type="text" id="bcm-content-filter" placeholder="' . esc_attr__('Press Enter or click Search...', 'bylaw-clause-manager') . '" style="width: 300px;" />';
+    echo '  <button type="button" id="bcm-content-search">' . esc_html__('Search', 'bylaw-clause-manager') . '</button>';
     echo '  <button type="button" onclick="bcmClearFilters()">' . esc_html__('Clear Filters', 'bylaw-clause-manager') . '</button>';
     echo '  <button type="button" onclick="window.print()">' . esc_html__('Print / Export PDF', 'bylaw-clause-manager') . '</button>';
     echo '</div><!-- #bcm-toolbar -->';
