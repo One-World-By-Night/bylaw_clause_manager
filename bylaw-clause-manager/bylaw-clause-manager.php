@@ -5,7 +5,7 @@
  * Text Domain: bylaw-clause-manager
  * Plugin URI: https://www.github.com/One-World-By-Night/bylaw-clause-manager
  * Description: Short description of the plugin functionality.
- * Version: 2.3.2
+ * Version: 2.3.5
  * Author: greghacke
  * Contributors: greghacke
  * Author URI: https://www.github.com/One-World-By-Night

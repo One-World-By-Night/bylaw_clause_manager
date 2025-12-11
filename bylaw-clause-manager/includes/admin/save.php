@@ -2,7 +2,7 @@
 
 /** File: includes/admin/save.php
  * Text Domain: bylaw-clause-manager
- * @version 2.3.0
+ * @version 2.3.1
  * @author greghacke
  * Function: Save post meta for the Bylaw Clause CPT
  */
@@ -84,3 +84,21 @@ add_action('save_post_bylaw_clause', function ($post_id) {
         }
     }
 });
+
+/** Clear bylaw transient cache on any clause save.
+ * This ensures guests see updated content after editors make changes.
+ * Runs at priority 99 to execute after all meta updates are complete.
+ */
+add_action('save_post_bylaw_clause', function ($post_id) {
+    // Skip autosaves and revisions
+    if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || wp_is_post_revision($post_id)) {
+        return;
+    }
+
+    global $wpdb;
+    $wpdb->query(
+        "DELETE FROM {$wpdb->options} 
+         WHERE option_name LIKE '_transient_bcm_bylaws_%' 
+            OR option_name LIKE '_transient_timeout_bcm_bylaws_%'"
+    );
+}, 99);

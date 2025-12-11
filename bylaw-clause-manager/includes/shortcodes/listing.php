@@ -2,7 +2,7 @@
 
 /** File: includes/shortcodes/listing.php
  * Text Domain: bylaw-clause-manager
- * @version 2.3.0
+ * @version 2.3.1
  * @author greghacke
  * Function: Shortcodes for rendering Bylaw Clauses
  */
@@ -17,9 +17,22 @@ defined('ABSPATH') || exit;
  * The rendered output is wrapped in a div with the class 'bcm-wrapper' for styling.
  * The shortcode can be used in posts or pages with the format:
  *      [render_bylaws group="group-slug"]
+ * 
+ * Caching: Output is cached via transients for non-editors. Cache invalidates on clause save.
  */
 add_shortcode('render_bylaws', function ($atts) {
     $atts = shortcode_atts(['group' => null], $atts);
+
+    // === CACHE CHECK START ===
+    // Skip cache for logged-in users with edit capability (they need fresh data)
+    $use_cache = !current_user_can('edit_posts');
+    $cache_key = 'bcm_bylaws_' . md5(serialize($atts));
+
+    if ($use_cache && ($cached = get_transient($cache_key))) {
+        return $cached;
+    }
+    // === CACHE CHECK END ===
+
     ob_start();
 
     // Query latest modified clause for timestamp
@@ -61,5 +74,13 @@ add_shortcode('render_bylaws', function ($atts) {
 
     echo '</div>';
 
-    return ob_get_clean();
+    // === CACHE STORE START ===
+    $output = ob_get_clean();
+
+    if ($use_cache) {
+        set_transient($cache_key, $output, HOUR_IN_SECONDS);
+    }
+
+    return $output;
+    // === CACHE STORE END ===
 });
