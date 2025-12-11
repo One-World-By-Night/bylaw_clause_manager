@@ -2,7 +2,7 @@
 
 /** File: includes/shortcodes/listing.php
  * Text Domain: bylaw-clause-manager
- * @version 2.3.1
+ * @version 2.3.6
  * @author greghacke
  * Function: Shortcodes for rendering Bylaw Clauses
  */
@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
  * The shortcode can be used in posts or pages with the format:
  *      [render_bylaws group="group-slug"]
  * 
- * Caching: Output is cached via transients for non-editors. Cache invalidates on clause save.
+ * Caching: Output is cached via transients for non-editors. Cache invalidates via version flag on clause save.
  */
 add_shortcode('render_bylaws', function ($atts) {
     $atts = shortcode_atts(['group' => null], $atts);
@@ -26,7 +26,8 @@ add_shortcode('render_bylaws', function ($atts) {
     // === CACHE CHECK START ===
     // Skip cache for logged-in users with edit capability (they need fresh data)
     $use_cache = !current_user_can('edit_posts');
-    $cache_key = 'bcm_bylaws_' . md5(serialize($atts));
+    $cache_version = get_option('bcm_cache_version', 0);
+    $cache_key = 'bcm_bylaws_' . md5(serialize($atts) . $cache_version);
 
     if ($use_cache && ($cached = get_transient($cache_key))) {
         return $cached;
@@ -78,7 +79,7 @@ add_shortcode('render_bylaws', function ($atts) {
     $output = ob_get_clean();
 
     if ($use_cache) {
-        set_transient($cache_key, $output, HOUR_IN_SECONDS);
+        set_transient($cache_key, $output, 12 * HOUR_IN_SECONDS);
     }
 
     return $output;

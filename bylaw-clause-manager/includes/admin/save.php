@@ -2,103 +2,99 @@
 
 /** File: includes/admin/save.php
  * Text Domain: bylaw-clause-manager
- * @version 2.3.1
+ * @version 2.3.6
  * @author greghacke
  * Function: Save post meta for the Bylaw Clause CPT
  */
 
 defined('ABSPATH') || exit;
 
-/** Save post meta from the regular edit screen.
- * This function handles saving custom fields for the Bylaw Clause CPT when using the regular edit screen.
- * It checks for the nonce to ensure security, verifies user permissions, and updates the post meta accordingly.
- * It updates the Bylaw Group, Tags, Parent Clause, and other custom fields based on the submitted data.
- * If the post is being autosaved or is a revision, it exits early to prevent unnecessary updates.
- * The function uses `sanitize_key`, `sanitize_text_field`, and `esc_url_raw` to ensure the data is clean and safe before saving.
- * It also checks if the post type is 'bylaw_clause' to ensure it only processes relevant posts.
+/** Save post meta from regular edit screen or Quick Edit.
+ * Consolidated into single hook for performance.
  */
 add_action('save_post_bylaw_clause', function ($post_id) {
-    if (
-        defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ||
-        !isset($_POST['bcm_clause_meta_nonce']) ||
-        !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bcm_clause_meta_nonce'])), 'bcm_clause_meta_save') ||
-        !current_user_can('edit_post', $post_id)
-    ) {
-        return;
-    }
-
-    $tags         = isset($_POST['bcm_tags']) ? sanitize_text_field(wp_unslash($_POST['bcm_tags'])) : '';
-    $group        = isset($_POST['bcm_bylaw_group']) ? sanitize_key(wp_unslash($_POST['bcm_bylaw_group'])) : '';
-    $parent_id    = isset($_POST['bcm_parent_clause']) ? absint(wp_unslash($_POST['bcm_parent_clause'])) : 0;
-    $section_id   = isset($_POST['bcm_section_id']) ? sanitize_text_field(wp_unslash($_POST['bcm_section_id'])) : '';
-    $vote_date    = isset($_POST['bcm_vote_date']) ? sanitize_text_field(wp_unslash($_POST['bcm_vote_date'])) : '';
-    $vote_ref     = isset($_POST['bcm_vote_reference']) ? sanitize_text_field(wp_unslash($_POST['bcm_vote_reference'])) : '';
-    $vote_url     = isset($_POST['bcm_vote_url']) ? esc_url_raw(wp_unslash($_POST['bcm_vote_url'])) : '';
-
-    update_post_meta($post_id, 'tags', $tags);
-    update_post_meta($post_id, 'bylaw_group', $group);
-    update_post_meta($post_id, 'section_id', $section_id);
-    update_post_meta($post_id, 'vote_date', $vote_date);
-    update_post_meta($post_id, 'vote_reference', $vote_ref);
-    update_post_meta($post_id, 'vote_url', $vote_url);
-    update_post_meta($post_id, 'parent_clause', ($parent_id !== $post_id ? $parent_id : ''));
-});
-
-/** Save post meta from the Quick Edit screen.
- * This function handles saving custom fields for the Bylaw Clause CPT when using Quick Edit.
- * It checks for the nonce to ensure security, verifies user permissions, and updates the post meta accordingly.
- * It updates the Bylaw Group, Tags, Parent Clause, and other custom fields based on the submitted data.
- * If the post is being autosaved or is a revision, it exits early to prevent unnecessary updates.
- * The function uses `sanitize_key`, `sanitize_text_field`, and `esc_url_raw` to ensure the data is clean and safe before saving.
- * It also checks if the post type is 'bylaw_clause' to ensure it only processes relevant posts.
- */
-add_action('save_post_bylaw_clause', function ($post_id) {
-    if (
-        defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ||
-        wp_is_post_revision($post_id) ||
-        get_post_type($post_id) !== 'bylaw_clause' ||
-        !current_user_can('edit_post', $post_id)
-    ) {
-        return;
-    }
-
-    if (!isset($_POST['bcm_qe_nonce'])) return;
-
-    $bcm_nonce = sanitize_text_field(wp_unslash($_POST['bcm_qe_nonce']));
-    if (!wp_verify_nonce($bcm_nonce, 'bcm_qe_save')) return;
-
-    if (isset($_POST['bcm_qe_bylaw_group'])) {
-        update_post_meta($post_id, 'bylaw_group', sanitize_key($_POST['bcm_qe_bylaw_group']));
-    }
-
-    if (isset($_POST['bcm_qe_tags'])) {
-        update_post_meta($post_id, 'tags', sanitize_textarea_field(wp_unslash($_POST['bcm_qe_tags'])));
-    }
-
-    if (isset($_POST['bcm_qe_parent_clause'])) {
-        $pid = absint($_POST['bcm_qe_parent_clause']);
-        if ($pid && $pid !== (int) $post_id) {
-            update_post_meta($post_id, 'parent_clause', $pid);
-        } else {
-            delete_post_meta($post_id, 'parent_clause');
-        }
-    }
-});
-
-/** Clear bylaw transient cache on any clause save.
- * This ensures guests see updated content after editors make changes.
- * Runs at priority 99 to execute after all meta updates are complete.
- */
-add_action('save_post_bylaw_clause', function ($post_id) {
-    // Skip autosaves and revisions
+    // Skip autosaves and revisions immediately
     if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || wp_is_post_revision($post_id)) {
         return;
     }
 
-    global $wpdb;
-    $wpdb->query(
-        "DELETE FROM {$wpdb->options} 
-         WHERE option_name LIKE '_transient_bcm_bylaws_%' 
-            OR option_name LIKE '_transient_timeout_bcm_bylaws_%'"
-    );
-}, 99);
+    if (!current_user_can('edit_post', $post_id)) {
+        return;
+    }
+
+    // Track if we saved anything (for cache clearing)
+    $saved = false;
+
+    // Regular edit screen save
+    if (
+        isset($_POST['bcm_clause_meta_nonce']) &&
+        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bcm_clause_meta_nonce'])), 'bcm_clause_meta_save')
+    ) {
+        $fields = [
+            'tags'           => isset($_POST['bcm_tags']) ? sanitize_text_field(wp_unslash($_POST['bcm_tags'])) : '',
+            'bylaw_group'    => isset($_POST['bcm_bylaw_group']) ? sanitize_key(wp_unslash($_POST['bcm_bylaw_group'])) : '',
+            'section_id'     => isset($_POST['bcm_section_id']) ? sanitize_text_field(wp_unslash($_POST['bcm_section_id'])) : '',
+            'vote_date'      => isset($_POST['bcm_vote_date']) ? sanitize_text_field(wp_unslash($_POST['bcm_vote_date'])) : '',
+            'vote_reference' => isset($_POST['bcm_vote_reference']) ? sanitize_text_field(wp_unslash($_POST['bcm_vote_reference'])) : '',
+            'vote_url'       => isset($_POST['bcm_vote_url']) ? esc_url_raw(wp_unslash($_POST['bcm_vote_url'])) : '',
+        ];
+
+        foreach ($fields as $key => $value) {
+            update_post_meta($post_id, $key, $value);
+        }
+
+        $parent_id = isset($_POST['bcm_parent_clause']) ? absint(wp_unslash($_POST['bcm_parent_clause'])) : 0;
+        update_post_meta($post_id, 'parent_clause', ($parent_id !== $post_id ? $parent_id : ''));
+
+        $saved = true;
+    }
+
+    // Quick Edit save
+    if (
+        isset($_POST['bcm_qe_nonce']) &&
+        wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bcm_qe_nonce'])), 'bcm_qe_save')
+    ) {
+        if (isset($_POST['bcm_qe_bylaw_group'])) {
+            update_post_meta($post_id, 'bylaw_group', sanitize_key($_POST['bcm_qe_bylaw_group']));
+        }
+
+        if (isset($_POST['bcm_qe_tags'])) {
+            update_post_meta($post_id, 'tags', sanitize_textarea_field(wp_unslash($_POST['bcm_qe_tags'])));
+        }
+
+        if (isset($_POST['bcm_qe_parent_clause'])) {
+            $pid = absint($_POST['bcm_qe_parent_clause']);
+            if ($pid && $pid !== (int) $post_id) {
+                update_post_meta($post_id, 'parent_clause', $pid);
+            } else {
+                delete_post_meta($post_id, 'parent_clause');
+            }
+        }
+
+        $saved = true;
+    }
+
+    // Only clear cache if we actually saved something
+    if ($saved) {
+        bcm_clear_bylaw_cache($post_id);
+    }
+});
+
+/** Clear bylaw transient cache efficiently.
+ * Uses specific transient keys instead of LIKE query.
+ */
+function bcm_clear_bylaw_cache($post_id) {
+    // Get the group for this post to clear only relevant cache
+    $group = get_post_meta($post_id, 'bylaw_group', true);
+    
+    // Clear specific group transient
+    if ($group) {
+        delete_transient('bcm_bylaws_' . md5(serialize(['group' => $group])));
+    }
+    
+    // Clear the "all groups" transient
+    delete_transient('bcm_bylaws_' . md5(serialize(['group' => null])));
+    
+    // Set a version flag instead of mass deletion
+    update_option('bcm_cache_version', time(), false);
+}
