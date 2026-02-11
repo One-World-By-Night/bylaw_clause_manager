@@ -261,9 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     clauses.forEach(clause => {
-      const content = clause.dataset.content || '';
       const textElement = clause.querySelector('.bylaw-label-text');
-      
+      const content = (textElement ? textElement.textContent : clause.dataset.content || '').toLowerCase();
+
       if (searchTerm === '' || content.includes(searchTerm)) {
         showIds.add(clause.dataset.id);
         

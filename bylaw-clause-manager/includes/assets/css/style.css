@@ -1,3 +1,16 @@
+.bylaw-section-id {
+  float: left;
+  margin-right: 0.3em;
+}
+
+.bylaw-section-id::before {
+  content: attr(data-section);
+}
+
+.bylaw-label-text > p:first-of-type {
+  margin-top: 0;
+}
+
 .bylaw-clause {
   margin-bottom: 1em;
 }

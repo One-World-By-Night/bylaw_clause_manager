@@ -121,6 +121,28 @@ From https://www.owbn.net/bylaws/character, we can model this clause structure:
 - “Clear Filters” returns the full hierarchy to view
 
 ## Versions
+
+### 2.3.9
+
+- Fixed TranslatePress compatibility: section numbers (e.g., "a.", "b.") are no longer mistranslated
+- Fixed line break appearing after clause numbers in translated pages
+- Section IDs now rendered via CSS to prevent translation interference
+- Removed outer p tag wrapper to prevent nested p tags with wpautop
+- Content filter now searches visible translated text instead of English-only data attribute
+
+### 2.3.8
+
+- TranslatePress fix with data-no-translation attribute
+
+### 2.3.7
+
+- Initial TranslatePress fix attempt
+
+### 2.3.6
+
+- Fixed save latency
+
 ### 2.3.0
-- Transition to content filters  
-- Update js and render for content filters  
+
+- Transition to content filters
+- Update js and render for content filters

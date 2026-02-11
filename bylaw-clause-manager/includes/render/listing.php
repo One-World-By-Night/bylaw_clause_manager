@@ -66,15 +66,13 @@ function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null)
         echo "\n  <div class=\"bylaw-label-wrap\">";
         echo "\n    <div class=\"bylaw-label-text\">";
 
-        // Sanitize and strip wrapping <p> tags
+        // Section number rendered via data attribute + CSS ::before to prevent TranslatePress translation
+        echo "\n      <span class=\"bylaw-section-id\" data-no-translation data-section=\"" . esc_attr($section) . ".\"></span>";
         $filtered_content = apply_filters('the_content', $content);
-        $filtered_content = preg_replace('#^<p>|</p>$#', '', trim($filtered_content));
-
-        echo "\n      <p>" . esc_html($section) . ". " . wp_kses_post($filtered_content);
+        echo wp_kses_post($filtered_content);
         if (!empty($vote_marker)) {
-            echo ' ' . wp_kses_post($vote_marker);
+            echo wp_kses_post($vote_marker);
         }
-        echo "</p>";
 
         echo "\n    </div>";
         echo "\n  </div>";
