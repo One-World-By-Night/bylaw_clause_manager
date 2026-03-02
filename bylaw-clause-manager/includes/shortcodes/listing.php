@@ -1,25 +1,7 @@
 <?php
 
-/** File: includes/shortcodes/listing.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.6
- * @author greghacke
- * Function: Shortcodes for rendering Bylaw Clauses
- */
-
 defined('ABSPATH') || exit;
 
-/** Renders the Bylaw Clause listing shortcode.
- * This shortcode displays a list of Bylaw Clauses, allowing users to filter by tags and print/export the list.
- * It queries the latest modified clause to show the last updated timestamp.
- * The shortcode accepts an optional 'group' attribute to filter clauses by a specific Bylaw Group.
- * The output includes a toolbar for filtering and printing, and it renders the Bylaw Clause tree structure.
- * The rendered output is wrapped in a div with the class 'bcm-wrapper' for styling.
- * The shortcode can be used in posts or pages with the format:
- *      [render_bylaws group="group-slug"]
- * 
- * Caching: Output is cached via transients for non-editors. Cache invalidates via version flag on clause save.
- */
 add_shortcode('render_bylaws', function ($atts) {
     $atts = shortcode_atts(['group' => null], $atts);
 

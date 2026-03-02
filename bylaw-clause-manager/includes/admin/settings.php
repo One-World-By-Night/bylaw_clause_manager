@@ -1,17 +1,6 @@
 <?php
 
-/** File: includes/admin/settings.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.0
- * @author greghacke
- * Function: Set up the admin settings page for managing bylaw groups
- */
-
 defined('ABSPATH') || exit;
-
-/** Render the Bylaw Group settings page
- * This function displays the settings page for managing bylaw groups.
- */
 
 add_action('admin_menu', function () {
     add_submenu_page(

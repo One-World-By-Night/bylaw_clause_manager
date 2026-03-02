@@ -1,21 +1,7 @@
 <?php
 
-/** File: includes/templates/bylaw-groups.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.0
- * @author greghacke
- * Function: Rendering logic for Bylaw Groups settings page
- */
-
 defined('ABSPATH') || exit;
 
-/** Renders the Bylaw Groups settings page in the WordPress admin.
- * This function displays a form for managing Bylaw Groups, allowing users to add, edit, and remove groups.
- * It handles form submissions to save changes to the groups, ensuring that only valid keys and labels are saved.
- * The page includes nonce verification for security, and it displays a success message upon saving.
- * The groups are displayed in a table format, with options to add new groups dynamically via JavaScript.
- * The form uses standard WordPress functions for sanitization and escaping to ensure data integrity and security.
- */
 function bcm_render_bylaw_group_settings_page()
 {
     // Save changes if posted

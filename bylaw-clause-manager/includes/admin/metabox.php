@@ -1,17 +1,7 @@
 <?php
 
-/** File: includes/admin/metabox.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.0
- * @author greghacke
- * Function: Register and render the Bylaw Clause metabox in the admin area
- */
-
 defined('ABSPATH') || exit;
 
-/** Register the Bylaw Clause metabox
- * This function adds a metabox to the Bylaw Clause post type edit screen.
- */
 add_action('add_meta_boxes', function () {
     add_meta_box(
         'bcm_clause_meta',
@@ -23,14 +13,6 @@ add_action('add_meta_boxes', function () {
     );
 });
 
-/**
- * Render the Bylaw Clause metabox UI
- * This function outputs the HTML for the Bylaw Clause metabox. 
- * It includes fields for selecting the Bylaw Group, Parent Clause, Section ID, Tags, and Vote Metadata.
- * It also includes nonce fields for security.
- *
- * @param WP_Post $post
- */
 function bcm_render_clause_metabox($post)
 {
     wp_nonce_field('bcm_clause_meta_save', 'bcm_clause_meta_nonce');
@@ -94,8 +76,6 @@ function bcm_render_clause_metabox($post)
     }
 
     echo '</select></label></p>';
-
-    // Add script to update parent options when group changes
     echo '<script>
     jQuery(document).ready(function($) {
         $("#bcm_bylaw_group").on("change", function() {

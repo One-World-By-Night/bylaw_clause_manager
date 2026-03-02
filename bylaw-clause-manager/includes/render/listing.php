@@ -1,20 +1,7 @@
 <?php
 
-/** File: includes/render/listing.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.0
- * @author author
- * Function: Generate a hierarchical tree structure of Bylaw Clauses.
- */
-
 defined('ABSPATH') || exit;
 
-/** Renders the Bylaw Clause tree structure recursively.
- * This function retrieves all Bylaw Clauses from the database, ordered by their sequence.
- * It builds a hierarchical tree structure based on the parent-child relationships defined in the 'parent_clause' meta field.
- * The function supports depth control, allowing it to render nested clauses up to a specified depth.
- * It also supports filtering by Bylaw Group if specified.
- */
 function bcm_render_bylaw_tree($parent_id = 0, $depth = 0, $group = null)
 {
     $meta_query = [];

@@ -1,12 +1,5 @@
 <?php
 
-/** File: includes/tools/bulk-operations.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.0
- * @author greghacke
- * Function: Bulk operation functions for Bylaw Clause Manager
- */
-
 defined('ABSPATH') || exit;
 
 /**

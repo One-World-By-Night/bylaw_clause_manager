@@ -2,17 +2,12 @@
 
 /**
  * Plugin Name: Bylaw Clause Manager
- * Text Domain: bylaw-clause-manager
- * Plugin URI: https://www.github.com/One-World-By-Night/bylaw-clause-manager
- * Description: Short description of the plugin functionality.
- * Version: 3.0.0
+ * Plugin URI: https://github.com/One-World-By-Night/bylaw-clause-manager
+ * Description: Manage and display nested bylaws with filtering, tooltips, and hierarchical rendering.
+ * Version: 3.1.0
  * Author: greghacke
- * Contributors: greghacke
- * Author URI: https://www.github.com/One-World-By-Night
  * License: GPL-2.0-or-later
- * License URI: http://www.gnu.org/licenses/gpl-2.0.html
- * Domain Path: /includes/languages
- * GitHub Branch: main
+ * Text Domain: bylaw-clause-manager
  */
 
 defined('ABSPATH') || exit;

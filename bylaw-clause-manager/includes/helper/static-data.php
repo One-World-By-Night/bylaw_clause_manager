@@ -1,18 +1,7 @@
 <?php
 
-/** File: includes/helper/static-data.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.0
- * @author greghacke
- * Function: Static data helper functions for the Bylaw Clause Manager plugin
- */
-
 defined('ABSPATH') || exit;
 
-/** Retrieves the Bylaw Groups from the options table.
- *
- * @return array
- */
 function bcm_get_bylaw_groups()
 {
     $groups = get_option('bcm_bylaw_groups', []);

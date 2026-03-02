@@ -1,17 +1,7 @@
 <?php
 
-/** File: includes/admin/save.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.6
- * @author greghacke
- * Function: Save post meta for the Bylaw Clause CPT
- */
-
 defined('ABSPATH') || exit;
 
-/** Save post meta from regular edit screen or Quick Edit.
- * Consolidated into single hook for performance.
- */
 add_action('save_post_bylaw_clause', function ($post_id) {
     // Skip autosaves and revisions immediately
     if ((defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || wp_is_post_revision($post_id)) {
@@ -80,9 +70,6 @@ add_action('save_post_bylaw_clause', function ($post_id) {
     }
 });
 
-/** Clear bylaw transient cache efficiently.
- * Uses specific transient keys instead of LIKE query.
- */
 function bcm_clear_bylaw_cache($post_id) {
     // Get the group for this post to clear only relevant cache
     $group = get_post_meta($post_id, 'bylaw_group', true);

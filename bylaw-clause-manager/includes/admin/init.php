@@ -1,22 +1,12 @@
 <?php
 
-/** File: includes/admin/init.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.0
- * @author greghacke
- * Function: Quickly initialize the admin area of the Bylaw Clause Manager plugin.
- */
-
 defined('ABSPATH') || exit;
 
-/** --- Require each admin file once --- */
 require_once __DIR__ . '/cpt.php';
 require_once __DIR__ . '/settings.php';
 require_once __DIR__ . '/enqueue.php';
 require_once __DIR__ . '/metabox.php';
 require_once __DIR__ . '/save.php';
-
-// AJAX handler for fetching clauses by group
 add_action('wp_ajax_bcm_get_group_clauses', function () {
     check_ajax_referer('bcm_ajax_nonce', 'nonce');
 

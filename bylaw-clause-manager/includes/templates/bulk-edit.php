@@ -1,16 +1,7 @@
 <?php
 
-/** File: includes/templates/bulk-edit.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.0
- * @author greghacke
- * Function: Rendering logic for Bulk Edit settings page
- */
-
 defined('ABSPATH') || exit;
 
-/** Renders the Bulk Edit page in the WordPress admin.
- */
 function bcm_render_bulk_edit_page()
 {
     $groups = bcm_get_bylaw_groups();

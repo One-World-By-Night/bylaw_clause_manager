@@ -1,20 +1,7 @@
 <?php
 
-/** File: includes/tools/functions.php
- * Text Domain: bylaw-clause-manager
- * @version 2.3.0
- * @author greghacke
- * Function: Tools functions for the Bylaw Clause Manager plugin
- */
-
 defined('ABSPATH') || exit;
 
-/** Normalizes a clause title by converting it to lowercase and replacing dots with underscores.
- * Used for consistent matching of clause hierarchy regardless of format.
- *
- * @param string $title
- * @return string
- */
 function bcm_normalize_clause_title($title)
 {
     return strtolower(str_replace('.', '_', $title));
