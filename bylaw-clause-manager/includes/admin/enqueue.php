@@ -4,16 +4,19 @@ defined('ABSPATH') || exit;
 
 function bcm_admin_enqueue_assets($hook)
 {
-    // $allowed_hooks = [
-    //     'edit.php',
-    //     'post.php',
-    //     'post-new.php',
-    //     'bylaw-clause_page_bcm_bylaw_groups',
-    // ];
+    $allowed_hooks = [
+        'edit.php',
+        'post.php',
+        'post-new.php',
+        'bylaw-clause_page_bcm_bylaw_groups',
+    ];
 
-    // if (!in_array($hook, $allowed_hooks, true)) {
-    //     return;
-    // }
+    if ( ! in_array( $hook, $allowed_hooks, true ) ) {
+        $screen = get_current_screen();
+        if ( ! $screen || ! in_array( $screen->post_type, [ 'bylaw-clause', 'bylaw_clause' ], true ) ) {
+            return;
+        }
+    }
 
     // __DIR__ resolves to /includes/admin/
     $base_url  = plugin_dir_url(__DIR__) . '/assets/';
