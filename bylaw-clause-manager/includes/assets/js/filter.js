@@ -94,7 +94,7 @@ jQuery(function ($) {
       // Re-init Select2 with filtered options
       $parentSelect.select2({ 
         width: '100%',
-        placeholder: 'Select Parent Clause',
+        placeholder: (window.bcmI18n && bcmI18n.selectParent) || 'Select Parent Clause',
         allowClear: true
       });
       
@@ -153,7 +153,7 @@ jQuery(function ($) {
       $parent.select2({
         width: '100%',
         matcher: bcmPrefixMatcher,
-        placeholder: 'Select Parent Clause',
+        placeholder: (window.bcmI18n && bcmI18n.selectParent) || 'Select Parent Clause',
         allowClear: true
       });
       console.log('✅ Select2 initialized on #bcm_parent_clause');

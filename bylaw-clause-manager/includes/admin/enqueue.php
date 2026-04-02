@@ -22,6 +22,9 @@ function bcm_admin_enqueue_assets($hook)
     wp_enqueue_style('bcm-select2', $base_url . 'css/select2.min.css', [], '4.1.0');
     wp_enqueue_script('bcm-select2', $base_url . 'js/select2.min.js', ['jquery'], '4.1.0', true);
     wp_enqueue_script('bcm-filter-v2', $base_url . 'js/filter.js', ['jquery', 'bcm-select2'], filemtime($base_path . 'js/filter.js'), true);
+    wp_localize_script('bcm-filter-v2', 'bcmI18n', array(
+        'selectParent' => __( 'Select Parent Clause', 'bylaw-clause-manager' ),
+    ));
     wp_enqueue_style('bylaw-clause-manager-style', $base_url . 'css/style.css', [], filemtime($base_path . 'css/style.css'));
 }
 
