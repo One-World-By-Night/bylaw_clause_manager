@@ -1,50 +1,27 @@
 # Bylaw Clause Manager
 
-WordPress plugin for managing hierarchical bylaws as individual clauses with filtering, tooltips, vote metadata, and recursive rendering.
+Manages and renders OWBN's organizational bylaws as structured, filterable, nested clauses.
 
-**Version**: 3.1.0
-**Requires PHP**: 7.4
-**License**: GPL-2.0-or-later
+**Version:** 3.1.0
+**Deployed to:** council.owbn.net (network-activated)
 
-## Installation
+## What It Does
 
-1. Copy `bylaw-clause-manager/` into `/wp-content/plugins/`
-2. Activate in WordPress admin
-3. Configure Bylaw Groups under **Bylaw Clauses > Bylaw Groups**
+OWBN's bylaws are broken into individual clauses stored as custom post types with parent-child nesting. The plugin renders them as a complete document with automatic section numbering, collapsible hierarchy, and tag-based filtering via Select2 dropdowns.
 
-## Usage
+Key features:
+- **Bylaw Groups** organize clauses into separate documents (e.g., Character Bylaws, Administrative Bylaws)
+- **Shortcode rendering** — `[render_bylaws group="character"]` outputs the full nested document
+- **Filtering** — readers filter by tag; clauses tagged `always` stay visible regardless
+- **Tooltips** — hover definitions for bylaw terms
+- **Vote metadata** — tracks which council vote adopted or amended each clause
+- **Elementor widget** — drop-in widget with advanced display controls
+- **TranslatePress compatible** — section numbers and content survive translation filters
 
-Render bylaws with the shortcode:
+## Requirements
 
-```
-[render_bylaws group="character"]
-```
+- WordPress 5.0+, PHP 7.4+
 
-Clauses nest automatically based on parent-child relationships. Filtering uses Select2 dropdowns built from clause tags. Clauses tagged `always` remain visible regardless of filters.
+## License
 
-## Changelog
-
-### 3.1.0
-
-- Renamed WPPLUGINNAME_* constants to BCM_*
-- Stripped comment bloat and redundant PHPDoc
-
-### 3.0.0
-
-- Elementor widget with advanced controls
-
-### 2.3.9
-
-- Fixed TranslatePress compatibility with section numbers and content filters
-
-### 2.3.6
-
-- Fixed save latency
-
-### 2.3.0
-
-- Transition to content filters
-
-## Contributing
-
-[github.com/One-World-By-Night/bylaw-clause-manager](https://github.com/One-World-By-Night/bylaw-clause-manager)
+GPL-2.0-or-later
