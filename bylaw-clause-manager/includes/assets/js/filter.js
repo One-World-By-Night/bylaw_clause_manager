@@ -40,11 +40,6 @@ jQuery(function ($) {
   function populateQuickEditFields(postId) {
     const $dataDiv = $('.bcm-quickedit-data[data-id="' + postId + '"]');
 
-    console.log('💡 Quick Edit Init');
-    console.log('Post ID:', postId);
-    console.log('Found data div?', $dataDiv.length);
-    console.log('Data:', $dataDiv.data());
-
     const $editRow = $('#edit-' + postId);
 
     if (!$dataDiv.length || !$editRow.length) return;
@@ -52,12 +47,6 @@ jQuery(function ($) {
     const group  = $dataDiv.data('bcm-group') || '';
     const tags   = $dataDiv.data('bcm-tags') || '';
     const parent = $dataDiv.data('bcm-parent') || '';
-
-    console.log(`Quick Edit Values for post ${postId}:`, {
-      group,
-      tags,
-      parent
-    });
 
     // Set values
     $editRow.find('input[name="bcm_qe_tags"]').val(tags);
@@ -72,9 +61,7 @@ jQuery(function ($) {
     // Add the change handler
     $groupSelect.on('change.bcmfilter', function() {
       const selectedGroup = $(this).val();
-      
-      console.log('Group changed to:', selectedGroup);
-      
+
       // Hide all optgroups first
       $parentSelect.find('optgroup').hide();
       
@@ -126,8 +113,6 @@ jQuery(function ($) {
   }
 
   $(document).on('click', 'button.editinline', function () {
-    console.log('✅ editinline clicked');
-
     const $row = $(this).closest('tr');
     const postId = $row.attr('id')?.replace('post-', '');
     if (postId) {
@@ -156,7 +141,6 @@ jQuery(function ($) {
         placeholder: (window.bcmI18n && bcmI18n.selectParent) || 'Select Parent Clause',
         allowClear: true
       });
-      console.log('✅ Select2 initialized on #bcm_parent_clause');
     }
   }, 100);
 });
